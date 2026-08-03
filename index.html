@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#07111f">
+  <meta name="description" content="Painel operacional Brasfels para controle de spools, materiais e importações Excel.">
+  <title>Brasfels Control Center</title>
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand">
+        <div class="brand-mark">B</div>
+        <div><strong>BRASFELS</strong><span>Control Center</span></div>
+      </div>
+      <nav class="nav" aria-label="Navegação principal">
+        <button class="nav-item active" data-view="dashboard"><span>◫</span> Visão executiva</button>
+        <button class="nav-item" data-view="spools"><span>◉</span> Controle de spools <b id="navSpoolCount">1.390</b></button>
+        <button class="nav-item" data-view="materials"><span>◇</span> Materiais <b id="navMaterialCount">4.290</b></button>
+        <button class="nav-item" data-view="divergences"><span>△</span> Divergências <b id="navDivergenceCount">45</b></button>
+        <button class="nav-item" data-view="imports"><span>⇧</span> Importações</button>
+        <button class="nav-item" data-view="settings"><span>⚙</span> Configuração</button>
+      </nav>
+      <div class="sidebar-footer">
+        <span class="status-dot"></span>
+        <div><strong>FPSO P85</strong><small>Schema: brasfels</small></div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <button class="icon-button menu-button" id="menuButton" aria-label="Abrir menu">☰</button>
+        <div>
+          <p class="eyebrow">STEP OIL &amp; GAS · BRASFELS</p>
+          <h1 id="pageTitle">Visão executiva</h1>
+        </div>
+        <div class="top-actions">
+          <div class="last-update"><span>Última base</span><strong id="lastUpdate">31/07/2026 17:10</strong></div>
+          <button class="button primary" id="openImport">＋ Importar atualização</button>
+        </div>
+      </header>
+
+      <section class="view active" id="view-dashboard">
+        <div class="hero">
+          <div>
+            <p class="eyebrow">CONTROLE OPERACIONAL INDEPENDENTE</p>
+            <h2>Produção, materiais e logística em uma única visão.</h2>
+            <p>Base atual do P85 preparada a partir do Spool Map e Spool Materials. Novas versões são validadas antes de substituir os dados.</p>
+          </div>
+          <div class="hero-badge"><span>Base validada</span><strong>100%</strong><small>dos spools vinculados aos materiais</small></div>
+        </div>
+
+        <div class="kpi-grid">
+          <article class="kpi"><div class="kpi-icon">◉</div><span>Total de spools</span><strong id="kpiSpools">1.390</strong><small>5 módulos</small></article>
+          <article class="kpi"><div class="kpi-icon">kg</div><span>Peso total</span><strong id="kpiWeight">115.497,3 kg</strong><small>Spool Map P85</small></article>
+          <article class="kpi"><div class="kpi-icon">◇</div><span>Linhas de materiais</span><strong id="kpiMaterials">4.290</strong><small>342 códigos vinculados</small></article>
+          <article class="kpi warning"><div class="kpi-icon">!</div><span>Spools em hold</span><strong id="kpiHold">36</strong><small>2,6% da base</small></article>
+          <article class="kpi success"><div class="kpi-icon">✓</div><span>Programados</span><strong id="kpiScheduled">1.389</strong><small>99,9% da base</small></article>
+          <article class="kpi danger"><div class="kpi-icon">△</div><span>Divergências &gt; 1%</span><strong id="kpiDivergences">45</strong><small>Peso spool × materiais</small></article>
+        </div>
+
+        <div class="dashboard-grid">
+          <article class="panel span-2">
+            <div class="panel-header"><div><p class="eyebrow">DISTRIBUIÇÃO</p><h3>Spools por módulo</h3></div><span class="pill">P85</span></div>
+            <div id="moduleBars" class="bar-chart"></div>
+          </article>
+          <article class="panel">
+            <div class="panel-header"><div><p class="eyebrow">FABRICAÇÃO</p><h3>Status atual</h3></div></div>
+            <div class="donut-row"><div class="donut" id="statusDonut"><span>97,2%</span></div><div class="legend" id="statusLegend"></div></div>
+          </article>
+          <article class="panel">
+            <div class="panel-header"><div><p class="eyebrow">QUALIDADE DOS DADOS</p><h3>Conferência automática</h3></div></div>
+            <div class="quality-list">
+              <div><span>Chaves únicas de spools</span><strong class="ok">1.390 / 1.390</strong></div>
+              <div><span>Vínculo com materiais</span><strong class="ok">100%</strong></div>
+              <div><span>Programação preenchida</span><strong class="ok">99,9%</strong></div>
+              <div><span>Divergência de peso</span><strong class="warn">45 alertas</strong></div>
+            </div>
+          </article>
+          <article class="panel span-2">
+            <div class="panel-header"><div><p class="eyebrow">ATENÇÃO</p><h3>Pontos que precisam de acompanhamento</h3></div><button class="text-button" data-go="divergences">Ver divergências →</button></div>
+            <div class="alert-grid">
+              <div class="alert-card"><span class="alert-icon danger-bg">△</span><div><strong>45 spools com peso divergente</strong><p>Diferença superior a 1% entre Spool Map e soma dos materiais.</p></div></div>
+              <div class="alert-card"><span class="alert-icon warning-bg">!</span><div><strong>36 spools em hold</strong><p>Devem permanecer separados da demanda normal até liberação.</p></div></div>
+              <div class="alert-card"><span class="alert-icon info-bg">i</span><div><strong>Arquivos P83 como referência</strong><p>Gráficos e faturamento serão tratados em módulos separados.</p></div></div>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="view" id="view-spools">
+        <div class="section-toolbar">
+          <div class="search"><span>⌕</span><input id="spoolSearch" placeholder="Pesquisar isométrico, spool, documento ou linha"></div>
+          <select id="moduleFilter"><option value="">Todos os módulos</option></select>
+          <select id="statusFilter"><option value="">Todos os status</option></select>
+          <label class="check-filter"><input type="checkbox" id="holdFilter"> Somente hold</label>
+          <button class="button secondary" id="exportSpools">Exportar CSV</button>
+        </div>
+        <div class="panel table-panel">
+          <div class="table-meta"><strong id="spoolResultCount">0 registros</strong><span>Clique em uma linha para ver os detalhes</span></div>
+          <div class="table-scroll"><table><thead><tr><th>Spool tag</th><th>Módulo</th><th>Isométrico</th><th>Peso</th><th>Programação</th><th>Status fabricação</th><th>Hold</th><th>Materiais</th></tr></thead><tbody id="spoolTableBody"></tbody></table></div>
+          <div class="pagination"><button id="spoolPrev">←</button><span id="spoolPageLabel">Página 1</span><button id="spoolNext">→</button></div>
+        </div>
+        <div class="empty-state" id="spoolEmpty"><strong>Importe o Spool Map para carregar a listagem completa.</strong><p>Os indicadores da análise inicial já estão disponíveis no dashboard.</p><button class="button primary import-shortcut">Importar arquivo</button></div>
+      </section>
+
+      <section class="view" id="view-materials">
+        <div class="section-toolbar">
+          <div class="search"><span>⌕</span><input id="materialSearch" placeholder="Pesquisar código, descrição ou spool"></div>
+          <select id="applicationFilter"><option value="">Shop e Field</option><option>Shop</option><option>Field</option></select>
+          <button class="button secondary" id="exportMaterials">Exportar CSV</button>
+        </div>
+        <div class="panel table-panel">
+          <div class="table-meta"><strong id="materialResultCount">0 registros</strong><span>Materiais relacionados pela chave Isométrico + Spool</span></div>
+          <div class="table-scroll"><table><thead><tr><th>Spool</th><th>Código</th><th>Descrição</th><th>Aplicação</th><th>Quantidade</th><th>Peso</th><th>Fabricante</th></tr></thead><tbody id="materialTableBody"></tbody></table></div>
+          <div class="pagination"><button id="materialPrev">←</button><span id="materialPageLabel">Página 1</span><button id="materialNext">→</button></div>
+        </div>
+        <div class="empty-state" id="materialEmpty"><strong>Importe o Spool Materials para visualizar os materiais.</strong><p>A importação cruza automaticamente as linhas com os spools existentes.</p><button class="button primary import-shortcut">Importar arquivo</button></div>
+      </section>
+
+      <section class="view" id="view-divergences">
+        <div class="section-intro"><div><p class="eyebrow">CONFERÊNCIA</p><h2>Divergências de peso</h2><p>Comparação entre peso do Spool Map e soma das linhas de materiais vinculadas.</p></div><span class="big-number" id="divergenceTotal">45</span></div>
+        <div class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>Spool</th><th>Módulo</th><th>Peso do spool</th><th>Peso dos materiais</th><th>Diferença</th><th>Variação</th><th>Classificação</th></tr></thead><tbody id="divergenceTableBody"></tbody></table></div></div>
+        <div class="empty-state" id="divergenceEmpty"><strong>Os 45 alertas foram identificados na análise inicial.</strong><p>Importe as duas bases P85 para detalhar cada divergência.</p></div>
+      </section>
+
+      <section class="view" id="view-imports">
+        <div class="section-intro"><div><p class="eyebrow">AUDITORIA</p><h2>Histórico de importações</h2><p>Cada arquivo é identificado por hash e comparado antes da aplicação.</p></div><button class="button primary import-shortcut">＋ Nova importação</button></div>
+        <div class="panel table-panel"><div class="table-scroll"><table><thead><tr><th>Data</th><th>Arquivo</th><th>Tipo</th><th>Status</th><th>Linhas</th><th>Novos</th><th>Atualizados</th><th>Alertas</th></tr></thead><tbody id="importTableBody"></tbody></table></div></div>
+      </section>
+
+      <section class="view" id="view-settings">
+        <div class="settings-grid">
+          <article class="panel settings-card"><p class="eyebrow">BANCO DE DADOS</p><h3>Supabase · INTRANET STEP ONE</h3><p>O endpoint e a chave pública já estão configurados. Informe seu acesso para sincronizar a base local com o schema <code>brasfels</code>.</p>
+            <label>URL do projeto<input id="supabaseUrl"></label>
+            <label>Chave pública<input id="supabaseKey" type="password"></label>
+            <label>E-mail<input id="supabaseEmail" type="email" placeholder="seu.email@step-og.com"></label>
+            <label>Senha<input id="supabasePassword" type="password" placeholder="••••••••"></label>
+            <div class="button-row"><button class="button primary" id="loginSupabase">Conectar</button><button class="button secondary" id="syncSupabase">Sincronizar dados</button></div>
+            <div class="connection-state" id="connectionState"><span></span><strong>Não conectado</strong></div>
+          </article>
+          <article class="panel settings-card"><p class="eyebrow">ESTRUTURA</p><h3>Isolamento Brasfels</h3><ul class="feature-list"><li>Schema independente <code>brasfels</code></li><li>RLS por projeto e perfil</li><li>Campos manuais preservados</li><li>Histórico por hash do arquivo</li><li>Dados P83 mantidos como referência</li></ul></article>
+          <article class="panel settings-card"><p class="eyebrow">ARMAZENAMENTO LOCAL</p><h3>Base do navegador</h3><p>Os dados importados ficam disponíveis neste dispositivo mesmo sem conexão. Use o botão abaixo para voltar à análise inicial.</p><button class="button danger-outline" id="resetLocal">Limpar base local</button></article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal-backdrop" id="importModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="importTitle">
+      <button class="modal-close" id="closeImport" aria-label="Fechar">×</button>
+      <p class="eyebrow">ATUALIZAÇÃO CONTROLADA</p><h2 id="importTitle">Importar arquivos Excel</h2>
+      <p class="modal-subtitle">Selecione um ou mais arquivos. Primeiro validamos a estrutura; nenhuma alteração é aplicada sem sua confirmação.</p>
+      <label class="dropzone" id="dropzone"><input type="file" id="fileInput" accept=".xlsx,.xls" multiple><span class="upload-icon">⇧</span><strong>Arraste as planilhas ou clique para selecionar</strong><small>Spool Map, Spool Materials, Gráficos ou Faturamento</small></label>
+      <div id="selectedFiles" class="selected-files"></div>
+      <div id="validationSummary" class="validation-summary" hidden></div>
+      <div class="modal-progress" id="modalProgress" hidden><span></span><div><strong id="progressTitle">Processando...</strong><small id="progressDetail"></small></div></div>
+      <div class="modal-actions"><button class="button secondary" id="cancelImport">Cancelar</button><button class="button primary" id="validateImport" disabled>Validar arquivos</button><button class="button success" id="applyImport" hidden>Aplicar atualização</button></div>
+    </div>
+  </div>
+
+  <aside class="drawer" id="spoolDrawer" aria-hidden="true"><button class="modal-close" id="closeDrawer">×</button><div id="drawerContent"></div></aside>
+  <div class="toast-container" id="toasts"></div>
+</body>
+</html>
