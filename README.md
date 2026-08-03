@@ -1,10 +1,12 @@
 # BRASFELS Control Center
 
+[![Publicar Painel BRASFELS](https://github.com/stepoil-debug/BRASFELS/actions/workflows/pages.yml/badge.svg)](https://github.com/stepoil-debug/BRASFELS/actions/workflows/pages.yml)
+
 Painel operacional independente para controle dos projetos BRASFELS, com importação incremental de arquivos Excel e persistência no schema `brasfels` do Supabase.
 
 ## Acesso
 
-Após a publicação pelo GitHub Pages, o painel fica disponível em:
+Painel publicado em:
 
 `https://stepoil-debug.github.io/BRASFELS/`
 
