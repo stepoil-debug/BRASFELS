@@ -27,9 +27,9 @@ jobs:
       - name: Preparar site público
         run: |
           mkdir -p _site
-          cp index.html styles.css app.js remote.js production.js production.css .nojekyll _site/
-          sed -i 's#</head>#<link rel="stylesheet" href="production.css?v=2"></head>#' _site/index.html
-          sed -i 's#</body>#<script defer src="remote.js?v=2"></script><script defer src="production.js?v=2"></script></body>#' _site/index.html
+          cp index.html styles.css app.js remote.js production.js production.css ui-fix.js .nojekyll _site/
+          sed -i 's#</head>#<link rel="stylesheet" href="production.css?v=3"></head>#' _site/index.html
+          sed -i 's#</body>#<script defer src="remote.js?v=3"></script><script defer src="production.js?v=3"></script><script defer src="ui-fix.js?v=3"></script></body>#' _site/index.html
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
