@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 190" role="img" aria-labelledby="title desc">
+  <title id="title">BrasFELS</title>
+  <desc id="desc">Logo BrasFELS em azul e vermelho.</desc>
+  <defs>
+    <linearGradient id="brasBlue" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a43d9"/>
+      <stop offset="1" stop-color="#082a9e"/>
+    </linearGradient>
+    <linearGradient id="felsRed" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ff2035"/>
+      <stop offset="1" stop-color="#e5001d"/>
+    </linearGradient>
+    <filter id="logoShadow" x="-15%" y="-30%" width="130%" height="170%">
+      <feDropShadow dx="0" dy="5" stdDeviation="3" flood-color="#17233a" flood-opacity=".2"/>
+    </filter>
+  </defs>
+  <g filter="url(#logoShadow)" stroke="#fff" stroke-width="2" paint-order="stroke fill">
+    <text x="20" y="143" font-family="Arial Black, Arial, sans-serif" font-size="135" font-style="italic" font-weight="900" letter-spacing="-10" fill="url(#brasBlue)">Bras</text>
+    <text x="330" y="143" font-family="Arial Black, Arial, sans-serif" font-size="135" font-style="italic" font-weight="900" letter-spacing="-9" fill="url(#felsRed)">FELS</text>
+  </g>
+</svg>
