@@ -2,9 +2,10 @@
 
 (function () {
   const INTRANET_URL = 'https://intranet-stepone.netlify.app';
-  const OFFICIAL_STEP_LOGO = `${INTRANET_URL}/api/branding/step-one-logo.webp?v=20260803-brasfels`;
+  const OFFICIAL_STEP_LOGO = `${INTRANET_URL}/api/branding/step-one-logo.webp?v=20260803-brasfels-v2`;
   const MIGRATION_ENDPOINT = `${CONFIG.supabaseUrl}/functions/v1/brasfels-partner-login`;
-  let installed = false;
+  const BRANDING_FLAG = 'brasfelsOfficialBranding';
+  let scheduled = false;
 
   const normalize = value => String(value || '').trim().toLowerCase();
 
@@ -15,6 +16,7 @@
     if (lower.includes('invalid login credentials')) return 'E-mail, login ou senha inválidos.';
     if (lower.includes('email not confirmed')) return 'O e-mail ainda não foi confirmado.';
     if (lower.includes('user not found')) return 'Usuário não encontrado.';
+    if (lower.includes('not authorized') || lower.includes('sem acesso')) return 'Seu usuário ainda não foi liberado para o painel BRASFELS.';
     if (lower.includes('rate limit') || lower.includes('too many')) return 'Muitas tentativas. Aguarde alguns minutos e tente novamente.';
     if (lower.includes('failed to fetch') || lower.includes('network')) return 'Não foi possível conectar ao serviço de autenticação.';
     return text;
@@ -23,17 +25,18 @@
   function showMessage(message, mode = 'error') {
     const box = document.querySelector('#partnerLoginError');
     if (!box) return;
-    box.textContent = translateAuthMessage(message);
-    box.classList.toggle('visible', Boolean(message));
+    const translated = translateAuthMessage(message);
+    if (box.textContent !== translated) box.textContent = translated;
+    box.classList.toggle('visible', Boolean(translated));
     box.classList.toggle('info', mode === 'info');
   }
 
   function setButton(label, disabled) {
     const button = document.querySelector('#partnerSubmit');
     if (!button) return;
-    button.disabled = disabled;
+    button.disabled = Boolean(disabled);
     const span = button.querySelector('span');
-    if (span) span.textContent = label;
+    if (span && span.textContent !== label) span.textContent = label;
   }
 
   async function linkIntranetCredential(identifier, password) {
@@ -45,6 +48,7 @@
       },
       body: JSON.stringify({ identifier, password }),
     });
+
     const payload = await response.json().catch(() => ({}));
     if (!response.ok) {
       const error = new Error(payload.error || 'Não foi possível validar o acesso na Intranet STEP One.');
@@ -54,72 +58,81 @@
     return payload;
   }
 
-  function installOfficialBranding() {
-    const logoComposition = document.querySelector('.partner-logo-composition');
-    if (logoComposition) {
-      const stepLogo = logoComposition.querySelector('img:first-child');
-      if (stepLogo) {
-        stepLogo.src = OFFICIAL_STEP_LOGO;
-        stepLogo.alt = 'STEP One';
-        stepLogo.referrerPolicy = 'no-referrer';
-      }
-    }
+  function setOfficialLogo(image) {
+    if (!image) return;
+    if (image.dataset.officialLogo === '1') return;
+    image.dataset.officialLogo = '1';
+    image.src = OFFICIAL_STEP_LOGO;
+    image.alt = 'STEP One';
+    image.referrerPolicy = 'no-referrer';
+  }
 
-    const card = document.querySelector('.partner-login-card');
-    if (card && !card.querySelector('.partner-card-logos')) {
+  function installOfficialBranding() {
+    const gate = document.querySelector('#brasfelsAuthGate');
+    if (!gate) return false;
+
+    const logoComposition = gate.querySelector('.partner-logo-composition');
+    if (logoComposition) setOfficialLogo(logoComposition.querySelector('img:first-child'));
+
+    const card = gate.querySelector('.partner-login-card');
+    if (!card) return false;
+
+    if (!card.querySelector('.partner-card-logos')) {
       const logos = document.createElement('div');
       logos.className = 'partner-card-logos';
       logos.innerHTML = `
-        <img src="${OFFICIAL_STEP_LOGO}" alt="STEP One" referrerpolicy="no-referrer">
+        <img data-official-logo="1" src="${OFFICIAL_STEP_LOGO}" alt="STEP One" referrerpolicy="no-referrer">
         <span>×</span>
-        <img src="assets/brasfels-logo.svg?v=6" alt="BrasFELS">`;
+        <img src="assets/brasfels-logo.svg?v=7" alt="BrasFELS">`;
       card.insertBefore(logos, card.firstChild);
     }
 
-    const intro = card?.querySelector(':scope > p');
-    if (intro) intro.textContent = 'Use o mesmo login e a mesma senha da Intranet STEP One. No primeiro acesso, a credencial será vinculada automaticamente ao painel BRASFELS.';
+    if (card.dataset[BRANDING_FLAG] !== '1') {
+      card.dataset[BRANDING_FLAG] = '1';
 
-    const identifier = document.querySelector('#partnerEmail');
-    if (identifier) {
-      identifier.type = 'text';
-      identifier.placeholder = 'E-mail corporativo ou login da Intranet';
-      identifier.autocomplete = 'username';
-      const label = identifier.closest('label');
-      if (label && label.firstChild) label.firstChild.textContent = 'E-mail ou login\n                ';
+      const intro = card.querySelector(':scope > p');
+      const introText = 'Use o mesmo login e a mesma senha da Intranet STEP One. No primeiro acesso, a credencial será vinculada automaticamente ao painel BRASFELS.';
+      if (intro && intro.textContent !== introText) intro.textContent = introText;
+
+      const identifier = card.querySelector('#partnerEmail');
+      if (identifier) {
+        identifier.type = 'text';
+        identifier.placeholder = 'E-mail corporativo ou login da Intranet';
+        identifier.autocomplete = 'username';
+        const label = identifier.closest('label');
+        const firstNode = label?.firstChild;
+        if (firstNode && firstNode.nodeType === Node.TEXT_NODE) firstNode.nodeValue = 'E-mail ou login\n                ';
+      }
+
+      const accessNote = card.querySelector('.partner-access-note span');
+      if (accessNote) {
+        accessNote.innerHTML = '<b>Acesso integrado</b>A senha não é exibida nem copiada. Ela é validada de forma segura pela Intranet STEP One e vinculada ao Supabase no primeiro acesso.';
+      }
     }
 
-    const accessNote = document.querySelector('.partner-access-note span');
-    if (accessNote) accessNote.innerHTML = '<b>Acesso integrado</b>A senha não é copiada nem exibida. Ela é validada com segurança na Intranet STEP One e vinculada ao Supabase no primeiro acesso.';
-  }
-
-  function installErrorTranslator() {
-    const box = document.querySelector('#partnerLoginError');
-    if (!box || box.dataset.translatorInstalled === '1') return;
-    box.dataset.translatorInstalled = '1';
-    const observer = new MutationObserver(() => {
-      const translated = translateAuthMessage(box.textContent);
-      if (translated && translated !== box.textContent) box.textContent = translated;
-    });
-    observer.observe(box, { childList: true, characterData: true, subtree: true });
+    return true;
   }
 
   function installForgotPassword() {
     const forgot = document.querySelector('#partnerForgot');
-    if (!forgot) return;
+    if (!forgot || forgot.dataset.bridgeInstalled === '1') return;
+    forgot.dataset.bridgeInstalled = '1';
     forgot.onclick = () => {
-      showMessage('A senha deste painel é a mesma da Intranet STEP One. Caso não lembre, solicite a redefinição ao administrador da Intranet.', 'info');
+      showMessage('A senha é a mesma da Intranet STEP One. Caso não lembre, solicite a redefinição ao administrador da Intranet.', 'info');
     };
   }
 
   function installLoginBridge() {
     const form = document.querySelector('#partnerLoginForm');
     if (!form || form.dataset.intranetBridge === '1') return false;
+
     const originalSubmit = form.onsubmit;
     if (typeof originalSubmit !== 'function') return false;
 
     form.dataset.intranetBridge = '1';
     form.onsubmit = async event => {
       event.preventDefault();
+
       const identifierInput = document.querySelector('#partnerEmail');
       const passwordInput = document.querySelector('#partnerPassword');
       const identifier = normalize(identifierInput?.value);
@@ -137,40 +150,52 @@
         const linked = await linkIntranetCredential(identifier, password);
         if (linked.email && identifierInput) identifierInput.value = linked.email;
         setButton('Entrando no painel...', true);
-        originalSubmit.call(form, { preventDefault() {} });
+        await originalSubmit.call(form, { preventDefault() {} });
       } catch (error) {
         const status = Number(error.status || 0);
         const canTryExistingSupabasePassword = identifier.includes('@') && (status === 401 || status === 503 || status === 0);
+
         if (canTryExistingSupabasePassword) {
           setButton('Verificando acesso existente...', true);
-          originalSubmit.call(form, { preventDefault() {} });
+          await originalSubmit.call(form, { preventDefault() {} });
           window.setTimeout(() => {
             const box = document.querySelector('#partnerLoginError');
             if (box?.textContent) box.textContent = translateAuthMessage(box.textContent);
-          }, 500);
+          }, 350);
           return;
         }
+
         showMessage(error.message || 'Não foi possível entrar.');
         setButton('Entrar e carregar dados', false);
       }
     };
+
     return true;
   }
 
   function install() {
+    scheduled = false;
     installOfficialBranding();
     installForgotPassword();
-    installErrorTranslator();
-    if (installLoginBridge()) installed = true;
+    installLoginBridge();
+  }
+
+  function scheduleInstall() {
+    if (scheduled) return;
+    scheduled = true;
+    window.requestAnimationFrame(install);
   }
 
   window.addEventListener('load', () => {
-    const observer = new MutationObserver(() => install());
+    scheduleInstall();
+
+    // Observa apenas recriações reais do formulário (por exemplo, após sair).
+    // Todas as alterações são idempotentes para impedir ciclos de mutação e travamentos.
+    const observer = new MutationObserver(mutations => {
+      if (mutations.some(mutation => mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)) {
+        scheduleInstall();
+      }
+    });
     observer.observe(document.body, { childList: true, subtree: true });
-    const timer = window.setInterval(() => {
-      install();
-      if (installed && document.querySelector('.partner-card-logos')) window.clearInterval(timer);
-    }, 250);
-    window.setTimeout(() => window.clearInterval(timer), 15000);
   });
 })();
