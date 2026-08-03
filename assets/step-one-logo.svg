@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 300" role="img" aria-labelledby="title desc">
+  <title id="title">STEP One</title>
+  <desc id="desc">Logo institucional STEP One em tons de azul.</desc>
+  <defs>
+    <linearGradient id="stepBlue" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#11d9f1"/>
+      <stop offset="0.42" stop-color="#078fe8"/>
+      <stop offset="1" stop-color="#082bb8"/>
+    </linearGradient>
+    <linearGradient id="stepDeep" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#102a9d"/>
+      <stop offset="0.58" stop-color="#068edc"/>
+      <stop offset="1" stop-color="#13d6eb"/>
+    </linearGradient>
+    <filter id="stepShadow" x="-20%" y="-30%" width="140%" height="170%">
+      <feDropShadow dx="0" dy="12" stdDeviation="10" flood-color="#164976" flood-opacity=".18"/>
+    </filter>
+  </defs>
+  <g filter="url(#stepShadow)">
+    <path d="M42 78c0-17 13-30 30-30h190c10 0 16 11 11 19l-25 38c-7 11-20 18-33 18H77c-19 0-35-12-35-45Z" fill="url(#stepBlue)"/>
+    <path d="M112 130h111c20 0 38-9 50-25l48-63c8-10 24-5 24 8v49c0 27-12 53-32 72l-57 52c-10 9-25 9-35 0l-126-70c-13-8-7-23 17-23Z" fill="url(#stepBlue)"/>
+    <path d="M187 207c10-8 24-9 35-2l49 31c10 6 10 21 0 27l-60 36c-13 8-30 0-32-15l-9-52c-2-10 5-18 17-25Z" transform="translate(0 -20)" fill="url(#stepBlue)"/>
+    <text x="350" y="212" font-family="Arial Black, Arial, sans-serif" font-size="176" font-style="italic" font-weight="900" letter-spacing="-15" fill="url(#stepDeep)">STEP</text>
+    <rect x="785" y="158" width="168" height="80" rx="18" fill="url(#stepBlue)"/>
+    <text x="799" y="218" font-family="Arial, sans-serif" font-size="61" font-style="italic" font-weight="500" fill="#fff">One</text>
+  </g>
+</svg>
