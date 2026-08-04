@@ -67,24 +67,34 @@
     image.referrerPolicy = 'no-referrer';
   }
 
+  function removeLogoSeparators(container) {
+    if (!container) return;
+    container.querySelectorAll('.partner-x, :scope > span').forEach(element => element.remove());
+  }
+
   function installOfficialBranding() {
     const gate = document.querySelector('#brasfelsAuthGate');
     if (!gate) return false;
 
     const logoComposition = gate.querySelector('.partner-logo-composition');
-    if (logoComposition) setOfficialLogo(logoComposition.querySelector('img:first-child'));
+    if (logoComposition) {
+      setOfficialLogo(logoComposition.querySelector('img:first-child'));
+      removeLogoSeparators(logoComposition);
+    }
 
     const card = gate.querySelector('.partner-login-card');
     if (!card) return false;
 
-    if (!card.querySelector('.partner-card-logos')) {
-      const logos = document.createElement('div');
-      logos.className = 'partner-card-logos';
-      logos.innerHTML = `
+    let cardLogos = card.querySelector('.partner-card-logos');
+    if (!cardLogos) {
+      cardLogos = document.createElement('div');
+      cardLogos.className = 'partner-card-logos';
+      cardLogos.innerHTML = `
         <img data-official-logo="1" src="${OFFICIAL_STEP_LOGO}" alt="STEP One" referrerpolicy="no-referrer">
-        <span>×</span>
         <img src="assets/brasfels-logo.svg?v=7" alt="BrasFELS">`;
-      card.insertBefore(logos, card.firstChild);
+      card.insertBefore(cardLogos, card.firstChild);
+    } else {
+      removeLogoSeparators(cardLogos);
     }
 
     if (card.dataset[BRANDING_FLAG] !== '1') {
@@ -189,8 +199,6 @@
   window.addEventListener('load', () => {
     scheduleInstall();
 
-    // Observa apenas recriações reais do formulário (por exemplo, após sair).
-    // Todas as alterações são idempotentes para impedir ciclos de mutação e travamentos.
     const observer = new MutationObserver(mutations => {
       if (mutations.some(mutation => mutation.addedNodes.length > 0 || mutation.removedNodes.length > 0)) {
         scheduleInstall();
