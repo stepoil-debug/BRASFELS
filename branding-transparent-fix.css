@@ -1,0 +1,76 @@
+.partner-logo-composition.transparent-branding,
+.partner-card-logos.transparent-branding{
+  display:flex!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:clamp(28px,5vw,76px)!important;
+  width:min(84%,860px)!important;
+  min-height:0!important;
+  margin:0 auto!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  overflow:visible!important;
+}
+
+.partner-logo-stage::before{
+  display:none!important;
+}
+
+.partner-logo-composition.transparent-branding img,
+.partner-card-logos.transparent-branding img{
+  display:block!important;
+  flex:0 1 auto!important;
+  margin:0!important;
+  padding:0!important;
+  border:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  mix-blend-mode:normal!important;
+  object-fit:contain!important;
+  transform:none!important;
+}
+
+.partner-logo-composition.transparent-branding img:first-child,
+.partner-card-logos.transparent-branding img:first-child{
+  width:min(58%,500px)!important;
+  height:auto!important;
+  max-height:150px!important;
+}
+
+.partner-logo-composition.transparent-branding img:last-child,
+.partner-card-logos.transparent-branding img:last-child{
+  width:min(31%,270px)!important;
+  height:auto!important;
+  max-height:105px!important;
+}
+
+@media(max-width:980px){
+  .partner-card-logos.transparent-branding{
+    width:100%!important;
+    gap:22px!important;
+    margin:0 0 22px!important;
+  }
+  .partner-card-logos.transparent-branding img:first-child{
+    width:min(62%,300px)!important;
+  }
+  .partner-card-logos.transparent-branding img:last-child{
+    width:min(30%,155px)!important;
+  }
+}
+
+@media(max-width:540px){
+  .partner-logo-composition.transparent-branding,
+  .partner-card-logos.transparent-branding{
+    gap:15px!important;
+  }
+  .partner-card-logos.transparent-branding img:first-child{
+    width:min(64%,245px)!important;
+  }
+  .partner-card-logos.transparent-branding img:last-child{
+    width:min(29%,122px)!important;
+  }
+}
