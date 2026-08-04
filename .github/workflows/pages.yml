@@ -27,13 +27,13 @@ jobs:
       - name: Preparar site público
         run: |
           mkdir -p _site/assets
-          cp index.html styles.css app.js remote.js production.js production.css ui-fix.js live-data.js live-data.css partnership-auth.js partnership-auth.css role-permissions.js auth-intranet-bridge.js auth-intranet-bridge.css auth-token-refresh.js access-intranet-mode.js import-v2.js import-v3.js import-v2.css .nojekyll _site/
+          cp index.html styles.css app.js remote.js production.js production.css ui-fix.js live-data.js live-data.css partnership-auth.js partnership-auth.css role-permissions.js auth-intranet-bridge.js auth-intranet-bridge.css auth-token-refresh.js access-intranet-mode.js import-v2.js import-v3.js import-v2.css source-data-popup.js source-data-popup.css .nojekyll _site/
           cp excel-import-worker-v2.js _site/excel-import-worker-v2-base.js
           cp excel-import-worker-v3.js _site/excel-import-worker-v2.js
           cp assets/step-one-logo.svg assets/brasfels-logo.svg _site/assets/
-          sed -Ei 's#excel-import-worker-v2\.js\?v=[0-9]+#excel-import-worker-v2.js?v=13#g' _site/import-v2.js
-          sed -i 's#</head>#<link rel="stylesheet" href="production.css?v=13"><link rel="stylesheet" href="live-data.css?v=13"><link rel="stylesheet" href="partnership-auth.css?v=13"><link rel="stylesheet" href="auth-intranet-bridge.css?v=13"><link rel="stylesheet" href="import-v2.css?v=13"></head>#' _site/index.html
-          sed -i 's#</body>#<script defer src="auth-token-refresh.js?v=13"></script><script defer src="remote.js?v=13"></script><script defer src="production.js?v=13"></script><script defer src="ui-fix.js?v=13"></script><script defer src="live-data.js?v=13"></script><script defer src="partnership-auth.js?v=13"></script><script defer src="role-permissions.js?v=13"></script><script defer src="auth-intranet-bridge.js?v=13"></script><script defer src="access-intranet-mode.js?v=13"></script><script defer src="import-v2.js?v=13"></script><script defer src="import-v3.js?v=13"></script></body>#' _site/index.html
+          sed -Ei 's#excel-import-worker-v2\.js\?v=[0-9]+#excel-import-worker-v2.js?v=14#g' _site/import-v2.js
+          sed -i 's#</head>#<link rel="stylesheet" href="production.css?v=14"><link rel="stylesheet" href="live-data.css?v=14"><link rel="stylesheet" href="partnership-auth.css?v=14"><link rel="stylesheet" href="auth-intranet-bridge.css?v=14"><link rel="stylesheet" href="import-v2.css?v=14"><link rel="stylesheet" href="source-data-popup.css?v=14"></head>#' _site/index.html
+          sed -i 's#</body>#<script defer src="auth-token-refresh.js?v=14"></script><script defer src="remote.js?v=14"></script><script defer src="production.js?v=14"></script><script defer src="ui-fix.js?v=14"></script><script defer src="live-data.js?v=14"></script><script defer src="partnership-auth.js?v=14"></script><script defer src="role-permissions.js?v=14"></script><script defer src="auth-intranet-bridge.js?v=14"></script><script defer src="access-intranet-mode.js?v=14"></script><script defer src="import-v2.js?v=14"></script><script defer src="import-v3.js?v=14"></script><script defer src="source-data-popup.js?v=14"></script></body>#' _site/index.html
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
