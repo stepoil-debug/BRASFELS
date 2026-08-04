@@ -14,6 +14,7 @@
   box-shadow:none!important;
   backdrop-filter:none!important;
   overflow:visible!important;
+  isolation:auto!important;
 }
 
 .partner-logo-stage::before{
@@ -29,16 +30,20 @@
   border:0!important;
   background:transparent!important;
   box-shadow:none!important;
-  mix-blend-mode:normal!important;
   object-fit:contain!important;
   transform:none!important;
 }
 
+/* A logo oficial vem com uma área branca no arquivo de origem.
+   O modo darken mantém exatamente o desenho original e faz o fundo claro
+   assumir a cor do próprio fundo da página, sem criar retângulo visível. */
 .partner-logo-composition.transparent-branding img:first-child,
 .partner-card-logos.transparent-branding img:first-child{
   width:min(58%,500px)!important;
   height:auto!important;
   max-height:150px!important;
+  mix-blend-mode:darken!important;
+  filter:contrast(1.04) saturate(1.05) drop-shadow(0 10px 16px rgba(29,67,98,.08))!important;
 }
 
 .partner-logo-composition.transparent-branding img:last-child,
@@ -46,6 +51,8 @@
   width:min(31%,270px)!important;
   height:auto!important;
   max-height:105px!important;
+  mix-blend-mode:normal!important;
+  filter:drop-shadow(0 8px 14px rgba(29,67,98,.08))!important;
 }
 
 @media(max-width:980px){
