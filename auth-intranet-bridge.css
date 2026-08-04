@@ -1,50 +1,80 @@
+.partner-logo-stage::before{display:none!important}
+
+.partner-logo-composition{
+  width:min(82%,860px)!important;
+  display:grid!important;
+  grid-template-columns:minmax(0,1.42fr) minmax(0,.88fr)!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:clamp(34px,5vw,72px)!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  backdrop-filter:none!important;
+  -webkit-backdrop-filter:none!important;
+}
+
+.partner-logo-composition .partner-x,
+.partner-logo-composition>span,
+.partner-card-logos>span{
+  display:none!important;
+}
+
+.partner-logo-composition img{
+  width:100%!important;
+  max-width:100%!important;
+  height:clamp(88px,10vw,138px)!important;
+  object-fit:contain!important;
+  object-position:center!important;
+  filter:drop-shadow(0 10px 18px rgba(29,67,98,.09));
+}
+
 .partner-logo-composition img:first-child{
-  transform:scale(1.42);
-  transform-origin:center;
+  transform:scale(1.12)!important;
+  transform-origin:center!important;
   mix-blend-mode:multiply;
 }
 
+.partner-logo-composition img:last-child{
+  transform:scale(.94)!important;
+  transform-origin:center!important;
+}
+
 .partner-card-logos{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:14px;
-  min-height:72px;
-  margin:-6px 0 22px;
-  padding:10px 14px;
-  border:1px solid rgba(199,218,229,.78);
-  border-radius:17px;
-  background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(243,249,252,.94));
-  box-shadow:0 12px 30px rgba(42,79,137,.07);
-  overflow:hidden;
+  display:grid!important;
+  grid-template-columns:minmax(0,1.4fr) minmax(0,.86fr)!important;
+  align-items:center!important;
+  justify-content:center!important;
+  gap:22px!important;
+  min-height:64px!important;
+  margin:-6px 0 22px!important;
+  padding:0!important;
+  border:0!important;
+  border-radius:0!important;
+  background:transparent!important;
+  box-shadow:none!important;
+  overflow:visible!important;
 }
 
 .partner-card-logos img:first-child{
-  width:min(57%,250px);
-  height:58px;
-  object-fit:contain;
-  transform:scale(1.26);
+  width:100%!important;
+  max-width:250px!important;
+  height:58px!important;
+  justify-self:end!important;
+  object-fit:contain!important;
+  transform:scale(1.12)!important;
+  transform-origin:center!important;
   mix-blend-mode:multiply;
 }
 
 .partner-card-logos img:last-child{
-  width:min(31%,145px);
-  height:50px;
-  object-fit:contain;
-}
-
-.partner-card-logos span{
-  width:28px;
-  height:28px;
-  display:grid;
-  place-items:center;
-  flex:0 0 auto;
-  border-radius:50%;
-  background:linear-gradient(135deg,#2a4f89,#0288d1);
-  color:#fff;
-  font-size:13px;
-  font-weight:900;
-  box-shadow:0 7px 18px rgba(2,136,209,.2);
+  width:100%!important;
+  max-width:145px!important;
+  height:50px!important;
+  justify-self:start!important;
+  object-fit:contain!important;
 }
 
 .partner-login-error.info{
@@ -54,22 +84,43 @@
   color:#245d83;
 }
 
-.partner-login-card>p{
-  font-size:11.5px;
-}
+.partner-login-card>p{font-size:11.5px}
 
 @media(max-width:980px){
-  .partner-card-logos{margin-top:-2px}
+  .partner-logo-composition{
+    width:min(88%,720px)!important;
+    gap:clamp(24px,5vw,46px)!important;
+  }
+  .partner-card-logos{margin-top:-2px!important}
 }
 
 @media(max-width:540px){
-  .partner-card-logos{
-    gap:9px;
-    min-height:62px;
-    margin-bottom:18px;
-    padding:8px 10px;
+  .partner-logo-composition{
+    width:88%!important;
+    grid-template-columns:1fr!important;
+    gap:14px!important;
   }
-  .partner-card-logos img:first-child{height:47px;transform:scale(1.32)}
-  .partner-card-logos img:last-child{height:40px}
-  .partner-card-logos span{width:24px;height:24px;font-size:11px}
+  .partner-logo-composition img{
+    height:72px!important;
+  }
+  .partner-logo-composition img:first-child{
+    transform:scale(1.02)!important;
+  }
+  .partner-logo-composition img:last-child{
+    height:54px!important;
+    transform:scale(.9)!important;
+  }
+  .partner-card-logos{
+    grid-template-columns:1.45fr .82fr!important;
+    gap:12px!important;
+    min-height:58px!important;
+    margin-bottom:18px!important;
+  }
+  .partner-card-logos img:first-child{
+    height:47px!important;
+    transform:scale(1.08)!important;
+  }
+  .partner-card-logos img:last-child{
+    height:40px!important;
+  }
 }
