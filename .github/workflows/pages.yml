@@ -29,8 +29,8 @@ jobs:
           mkdir -p _site/assets
           cp index.html styles.css app.js remote.js production.js production.css ui-fix.js live-data.js live-data.css partnership-auth.js partnership-auth.css role-permissions.js auth-intranet-bridge.js auth-intranet-bridge.css excel-import-worker-v2.js import-v2.js import-v2.css .nojekyll _site/
           cp assets/step-one-logo.svg assets/brasfels-logo.svg _site/assets/
-          sed -i 's#</head>#<link rel="stylesheet" href="production.css?v=8"><link rel="stylesheet" href="live-data.css?v=8"><link rel="stylesheet" href="partnership-auth.css?v=8"><link rel="stylesheet" href="auth-intranet-bridge.css?v=8"><link rel="stylesheet" href="import-v2.css?v=8"></head>#' _site/index.html
-          sed -i 's#</body>#<script defer src="remote.js?v=8"></script><script defer src="production.js?v=8"></script><script defer src="ui-fix.js?v=8"></script><script defer src="live-data.js?v=8"></script><script defer src="partnership-auth.js?v=8"></script><script defer src="role-permissions.js?v=8"></script><script defer src="auth-intranet-bridge.js?v=8"></script><script defer src="import-v2.js?v=8"></script></body>#' _site/index.html
+          sed -i 's#</head>#<link rel="stylesheet" href="production.css?v=9"><link rel="stylesheet" href="live-data.css?v=9"><link rel="stylesheet" href="partnership-auth.css?v=9"><link rel="stylesheet" href="auth-intranet-bridge.css?v=9"><link rel="stylesheet" href="import-v2.css?v=9"></head>#' _site/index.html
+          sed -i 's#</body>#<script defer src="remote.js?v=9"></script><script defer src="production.js?v=9"></script><script defer src="ui-fix.js?v=9"></script><script defer src="live-data.js?v=9"></script><script defer src="partnership-auth.js?v=9"></script><script defer src="role-permissions.js?v=9"></script><script defer src="auth-intranet-bridge.js?v=9"></script><script defer src="import-v2.js?v=9"></script></body>#' _site/index.html
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
