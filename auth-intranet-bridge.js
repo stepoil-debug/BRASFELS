@@ -2,7 +2,7 @@
 
 (function () {
   const INTRANET_URL = 'https://intranet-stepone.netlify.app';
-  const OFFICIAL_STEP_LOGO = `${INTRANET_URL}/api/branding/step-one-logo.webp?v=20260803-brasfels-v2`;
+  const OFFICIAL_STEP_LOGO = 'assets/step-one-official-transparent.png?v=19';
   const MIGRATION_ENDPOINT = `${CONFIG.supabaseUrl}/functions/v1/brasfels-partner-login`;
   const BRANDING_FLAG = 'brasfelsOfficialBranding';
   let scheduled = false;
@@ -60,11 +60,10 @@
 
   function setOfficialLogo(image) {
     if (!image) return;
-    if (image.dataset.officialLogo === '1') return;
     image.dataset.officialLogo = '1';
-    image.src = OFFICIAL_STEP_LOGO;
+    if (!image.src.includes('/assets/step-one-official-transparent.png')) image.src = OFFICIAL_STEP_LOGO;
     image.alt = 'STEP One';
-    image.referrerPolicy = 'no-referrer';
+    image.removeAttribute('referrerpolicy');
   }
 
   function removeLogoSeparators(container) {
@@ -90,10 +89,13 @@
       cardLogos = document.createElement('div');
       cardLogos.className = 'partner-card-logos';
       cardLogos.innerHTML = `
-        <img data-official-logo="1" src="${OFFICIAL_STEP_LOGO}" alt="STEP One" referrerpolicy="no-referrer">
-        <img src="assets/brasfels-logo.svg?v=7" alt="BrasFELS">`;
+        <img data-official-logo="1" src="${OFFICIAL_STEP_LOGO}" alt="STEP One">
+        <img src="assets/brasfels-logo.svg?v=19" alt="BrasFELS">`;
       card.insertBefore(cardLogos, card.firstChild);
     } else {
+      setOfficialLogo(cardLogos.querySelector('img:first-child'));
+      const brasfels = cardLogos.querySelector('img:last-child');
+      if (brasfels && !brasfels.src.includes('/assets/brasfels-logo.svg')) brasfels.src = 'assets/brasfels-logo.svg?v=19';
       removeLogoSeparators(cardLogos);
     }
 
