@@ -1,8 +1,8 @@
 'use strict';
 
 (function installTransparentBrandingFix() {
-  const STEP_LOGO = 'https://intranet-stepone.netlify.app/api/branding/step-one-logo.webp?v=20260804-official';
-  const BRASFELS_LOGO = 'assets/brasfels-logo.svg?v=18';
+  const STEP_LOGO = 'assets/step-one-official-transparent.png?v=19';
+  const BRASFELS_LOGO = 'assets/brasfels-logo.svg?v=19';
   let scheduled = false;
 
   function apply() {
@@ -13,16 +13,16 @@
 
       const images = container.querySelectorAll('img');
       if (images[0]) {
-        if (images[0].src !== STEP_LOGO) images[0].src = STEP_LOGO;
+        if (!images[0].src.includes('/assets/step-one-official-transparent.png')) images[0].src = STEP_LOGO;
         images[0].alt = 'STEP One';
-        images[0].referrerPolicy = 'no-referrer';
-        images[0].dataset.transparentAsset = 'official';
+        images[0].removeAttribute('referrerpolicy');
+        images[0].dataset.transparentAsset = 'official-png';
       }
 
       if (images[1]) {
         if (!images[1].src.includes('/assets/brasfels-logo.svg')) images[1].src = BRASFELS_LOGO;
         images[1].alt = 'BrasFELS';
-        images[1].dataset.transparentAsset = '1';
+        images[1].dataset.transparentAsset = 'official';
       }
 
       container.querySelectorAll('.partner-x, span').forEach(element => element.remove());
