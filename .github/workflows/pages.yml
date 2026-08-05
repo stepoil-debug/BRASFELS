@@ -31,9 +31,82 @@ jobs:
           cp excel-import-worker-v2.js _site/excel-import-worker-v2-base.js
           cp excel-import-worker-v3.js _site/excel-import-worker-v2.js
           cp assets/step-one-logo.svg assets/brasfels-logo.svg _site/assets/
-          sed -Ei 's#excel-import-worker-v2\.js\?v=[0-9]+#excel-import-worker-v2.js?v=18#g' _site/import-v2.js
-          sed -i 's#</head>#<link rel="stylesheet" href="production.css?v=18"><link rel="stylesheet" href="live-data.css?v=18"><link rel="stylesheet" href="partnership-auth.css?v=18"><link rel="stylesheet" href="auth-intranet-bridge.css?v=18"><link rel="stylesheet" href="import-v2.css?v=18"><link rel="stylesheet" href="source-data-popup.css?v=18"><link rel="stylesheet" href="scope-values.css?v=18"><link rel="stylesheet" href="branding-transparent-fix.css?v=18"></head>#' _site/index.html
-          sed -i 's#</body>#<script defer src="auth-token-refresh.js?v=18"></script><script defer src="remote.js?v=18"></script><script defer src="production.js?v=18"></script><script defer src="ui-fix.js?v=18"></script><script defer src="live-data.js?v=18"></script><script defer src="partnership-auth.js?v=18"></script><script defer src="role-permissions.js?v=18"></script><script defer src="auth-intranet-bridge.js?v=18"></script><script defer src="access-intranet-mode.js?v=18"></script><script defer src="import-v2.js?v=18"></script><script defer src="scope-import-bridge.js?v=18"></script><script defer src="import-v3.js?v=18"></script><script defer src="source-data-popup.js?v=18"></script><script defer src="scope-values.js?v=18"></script><script defer src="branding-transparent-fix.js?v=18"></script></body>#' _site/index.html
+
+      - name: Gerar logo STEP One oficial transparente
+        run: |
+          python -m pip install --disable-pip-version-check --quiet pillow
+          python - <<'PY'
+          from collections import deque
+          from io import BytesIO
+          from pathlib import Path
+          from urllib.request import Request, urlopen
+          from PIL import Image
+
+          url = 'https://intranet-stepone.netlify.app/api/branding/step-one-logo.webp?v=20260804-official'
+          request = Request(url, headers={'User-Agent': 'BRASFELS-GitHub-Pages/1.0'})
+          with urlopen(request, timeout=45) as response:
+              image = Image.open(BytesIO(response.read())).convert('RGBA')
+
+          width, height = image.size
+          pixels = image.load()
+          visited = bytearray(width * height)
+          queue = deque()
+
+          def index(x, y):
+              return y * width + x
+
+          def is_external_white(x, y):
+              red, green, blue, alpha = pixels[x, y]
+              return alpha <= 5 or (
+                  red >= 232 and green >= 232 and blue >= 232
+                  and max(red, green, blue) - min(red, green, blue) <= 18
+              )
+
+          def enqueue(x, y):
+              position = index(x, y)
+              if not visited[position] and is_external_white(x, y):
+                  visited[position] = 1
+                  queue.append((x, y))
+
+          for x in range(width):
+              enqueue(x, 0)
+              enqueue(x, height - 1)
+          for y in range(height):
+              enqueue(0, y)
+              enqueue(width - 1, y)
+
+          while queue:
+              x, y = queue.popleft()
+              pixels[x, y] = (255, 255, 255, 0)
+              if x > 0:
+                  enqueue(x - 1, y)
+              if x + 1 < width:
+                  enqueue(x + 1, y)
+              if y > 0:
+                  enqueue(x, y - 1)
+              if y + 1 < height:
+                  enqueue(x, y + 1)
+
+          alpha = image.getchannel('A')
+          bounds = alpha.getbbox()
+          if not bounds:
+              raise RuntimeError('A logo oficial ficou vazia durante a remoção do fundo.')
+
+          margin = 12
+          left = max(0, bounds[0] - margin)
+          top = max(0, bounds[1] - margin)
+          right = min(width, bounds[2] + margin)
+          bottom = min(height, bounds[3] + margin)
+          image = image.crop((left, top, right, bottom))
+
+          output = Path('_site/assets/step-one-official-transparent.png')
+          image.save(output, 'PNG', optimize=True)
+          print(f'Logo transparente gerada: {image.size[0]}x{image.size[1]}')
+          PY
+
+          sed -Ei 's#excel-import-worker-v2\.js\?v=[0-9]+#excel-import-worker-v2.js?v=19#g' _site/import-v2.js
+          sed -i 's#</head>#<link rel="stylesheet" href="production.css?v=19"><link rel="stylesheet" href="live-data.css?v=19"><link rel="stylesheet" href="partnership-auth.css?v=19"><link rel="stylesheet" href="auth-intranet-bridge.css?v=19"><link rel="stylesheet" href="import-v2.css?v=19"><link rel="stylesheet" href="source-data-popup.css?v=19"><link rel="stylesheet" href="scope-values.css?v=19"><link rel="stylesheet" href="branding-transparent-fix.css?v=19"></head>#' _site/index.html
+          sed -i 's#</body>#<script defer src="auth-token-refresh.js?v=19"></script><script defer src="remote.js?v=19"></script><script defer src="production.js?v=19"></script><script defer src="ui-fix.js?v=19"></script><script defer src="live-data.js?v=19"></script><script defer src="partnership-auth.js?v=19"></script><script defer src="role-permissions.js?v=19"></script><script defer src="auth-intranet-bridge.js?v=19"></script><script defer src="access-intranet-mode.js?v=19"></script><script defer src="import-v2.js?v=19"></script><script defer src="scope-import-bridge.js?v=19"></script><script defer src="import-v3.js?v=19"></script><script defer src="source-data-popup.js?v=19"></script><script defer src="scope-values.js?v=19"></script><script defer src="branding-transparent-fix.js?v=19"></script></body>#' _site/index.html
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
