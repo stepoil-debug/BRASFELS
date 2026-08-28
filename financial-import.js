@@ -1,7 +1,8 @@
 'use strict';
 
 (function installBrasfelsFinancialImport() {
-  const WORKER_URL = 'financial-import-worker.js?v=21';
+  const WORKER_URL = 'financial-import-worker.js?v=22';
+  const FINANCIAL_HASH_PREFIX = 'financial-v2:';
   let installed = false;
   let activeWorker = null;
 
@@ -18,6 +19,15 @@
     return name.includes('faturamento')
       && !name.includes('tabela spools valores')
       && !name.includes('tabela de spools e valores');
+  }
+
+  function versionFinancialHash(result) {
+    if (!result?.hash) return result;
+    if (!String(result.hash).startsWith(FINANCIAL_HASH_PREFIX)) {
+      result.rawHash = result.hash;
+      result.hash = `${FINANCIAL_HASH_PREFIX}${result.hash}`;
+    }
+    return result;
   }
 
   function setProgress(title, detail, current = null, total = null, error = false) {
@@ -90,14 +100,14 @@
         <div><span>Total processado</span><strong>${typeof fmt === 'function' ? fmt(totalRows) : totalRows}</strong></div>
         <div><span>Erros</span><strong>${errors.length}</strong></div>
       </div>
-      ${finance ? '<p class="processing-note"><strong>Módulo Financeiro:</strong> as 11 abas da planilha são versionadas individualmente no Supabase e ficam disponíveis no menu Financeiro.</p>' : ''}
+      ${finance ? '<p class="processing-note"><strong>Módulo Financeiro:</strong> esta versão grava as 11 abas financeiras separadamente. Importações antigas de faturamento não bloqueiam mais a nova estrutura.</p>' : ''}
       ${errors.length ? `<p class="warn"><strong>Arquivos com problema:</strong><br>${errors.map(error => typeof escapeHtml === 'function' ? escapeHtml(error) : error).join('<br>')}</p>` : ''}
       <div class="selected-files import-v2-results">
         ${analyses.map(item => {
           const rows = Number(item.rowCount || item.records?.length || 0);
           const datasets = item.datasets?.length || 0;
           const fileName = item.fileName || item.file?.name || '';
-          return `<div class="file-row"><span>✓</span><div><strong>${typeof escapeHtml === 'function' ? escapeHtml(item.label || item.type) : item.label || item.type}</strong><small>${typeof escapeHtml === 'function' ? escapeHtml(fileName) : fileName} · ${datasets} conjunto(s) · ${typeof fmt === 'function' ? fmt(rows) : rows} linhas</small></div>${item.duplicateFile ? '<span class="tag amber">Já aplicado</span>' : '<span class="tag green">Pronto</span>'}</div>`;
+          return `<div class="file-row"><span>✓</span><div><strong>${typeof escapeHtml === 'function' ? escapeHtml(item.label || item.type) : item.label || item.type}</strong><small>${typeof escapeHtml === 'function' ? escapeHtml(fileName) : fileName} · ${datasets} conjunto(s) · ${typeof fmt === 'function' ? fmt(rows) : rows} linhas</small></div>${item.duplicateFile ? '<span class="tag amber">Já aplicado nesta versão</span>' : '<span class="tag green">Pronto para aplicar</span>'}</div>`;
         }).join('')}
       </div>`;
 
@@ -135,7 +145,7 @@
         const file = financialFiles[index];
         setProgress(`Financeiro ${index + 1}/${financialFiles.length}`, file.name);
         try {
-          const result = await runWorker(file);
+          const result = versionFinancialHash(await runWorker(file));
           result.file = file;
           result.mode = 'complementary';
           result.duplicateFile = (state.imports || []).some(history => history.hash === result.hash && history.status === 'completed');
@@ -193,5 +203,5 @@
   }
 
   window.addEventListener('load', () => setTimeout(install, 2100));
-  window.BrasfelsFinancialImport = { isFinancialWorkbook };
+  window.BrasfelsFinancialImport = { isFinancialWorkbook, versionFinancialHash };
 })();
