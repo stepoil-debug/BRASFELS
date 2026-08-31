@@ -1,0 +1,38 @@
+/* Isolamento entre a Visão executiva legada (#view-dashboard) e o novo Dashboard de relatórios.
+   dashboard.css usa .dashboard-grid para o novo módulo; a classe já existia no painel original.
+   Estas regras preservam exatamente a grade histórica da Visão executiva sem alterar o novo Dashboard. */
+
+#view-dashboard .dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 17px;
+}
+
+#view-dashboard .dashboard-grid > .panel.span-2 {
+  grid-column: span 2;
+}
+
+/* O novo Dashboard mantém sua grade própria de 12 colunas. */
+#view-reports-dashboard .dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 1250px) {
+  #view-dashboard .dashboard-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  #view-dashboard .dashboard-grid > .panel.span-2 {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 800px) {
+  #view-dashboard .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  #view-dashboard .dashboard-grid > .panel.span-2 {
+    grid-column: auto;
+  }
+}
