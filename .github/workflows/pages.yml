@@ -26,11 +26,12 @@ jobs:
 
       - name: Preparar site público
         run: |
-          mkdir -p _site/assets
-          cp index.html styles.css app.js remote.js production.js production.css ui-fix.js live-data.js live-data.css partnership-auth.js partnership-auth.css role-permissions.js auth-intranet-bridge.js auth-intranet-bridge.css auth-token-refresh.js access-intranet-mode.js import-v2.js import-v3.js import-v2.css source-data-popup.js source-data-popup.css scope-import-bridge.js scope-values.js scope-values.css financial.js financial.css financial-import.js financial-import-worker.js dashboard.js dashboard.css dashboard-isolation.css branding-transparent-fix.js branding-transparent-fix.css .nojekyll _site/
-          cp excel-import-worker-v2.js _site/excel-import-worker-v2-base.js
-          cp excel-import-worker-v3.js _site/excel-import-worker-v2.js
-          cp assets/step-one-logo.svg assets/brasfels-logo.svg _site/assets/
+          rm -rf _site
+          mkdir -p _site
+          cp index.html .nojekyll *.css *.js _site/
+          cp -R assets _site/assets
+          BUILD_VERSION="${GITHUB_SHA::12}"
+          sed -i "s/__BUILD_VERSION__/${BUILD_VERSION}/g" _site/index.html
 
       - name: Gerar logo STEP One oficial transparente
         run: |
@@ -103,12 +104,6 @@ jobs:
           image.save(output, 'PNG', optimize=True)
           print(f'Logo transparente gerada: {image.size[0]}x{image.size[1]}')
           PY
-
-          sed -Ei 's#excel-import-worker-v2\.js\?v=[0-9]+#excel-import-worker-v2.js?v=19#g' _site/import-v2.js
-          # A visão executiva original já usa view-dashboard. O novo módulo precisa de ID próprio.
-          sed -i 's/view-dashboard/view-reports-dashboard/g' _site/dashboard.js
-          sed -i 's#</head>#<link rel="stylesheet" href="production.css?v=19"><link rel="stylesheet" href="live-data.css?v=19"><link rel="stylesheet" href="partnership-auth.css?v=19"><link rel="stylesheet" href="auth-intranet-bridge.css?v=19"><link rel="stylesheet" href="import-v2.css?v=19"><link rel="stylesheet" href="source-data-popup.css?v=19"><link rel="stylesheet" href="scope-values.css?v=19"><link rel="stylesheet" href="financial.css?v=21"><link rel="stylesheet" href="dashboard.css?v=26"><link rel="stylesheet" href="dashboard-isolation.css?v=26"><link rel="stylesheet" href="branding-transparent-fix.css?v=19"></head>#' _site/index.html
-          sed -i 's#</body>#<script defer src="auth-token-refresh.js?v=19"></script><script defer src="remote.js?v=19"></script><script defer src="production.js?v=19"></script><script defer src="ui-fix.js?v=19"></script><script defer src="live-data.js?v=19"></script><script defer src="partnership-auth.js?v=19"></script><script defer src="role-permissions.js?v=19"></script><script defer src="auth-intranet-bridge.js?v=19"></script><script defer src="access-intranet-mode.js?v=19"></script><script defer src="import-v2.js?v=19"></script><script defer src="scope-import-bridge.js?v=19"></script><script defer src="import-v3.js?v=19"></script><script defer src="financial-import.js?v=22"></script><script defer src="source-data-popup.js?v=19"></script><script defer src="scope-values.js?v=19"></script><script defer src="financial.js?v=21"></script><script defer src="dashboard.js?v=26"></script><script defer src="branding-transparent-fix.js?v=19"></script></body>#' _site/index.html
 
       - name: Configurar GitHub Pages
         uses: actions/configure-pages@v5
