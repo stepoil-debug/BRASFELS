@@ -85,7 +85,10 @@ function readWorkbook(buffer, sheetNames, options = {}) {
 function rowsFromSheet(workbook, sheetName) {
   const sheet = workbook.Sheets[sheetName];
   if (!sheet) throw new Error(`A aba ${sheetName} não foi encontrada.`);
-  return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '', blankrows: false });
+  // Os mapas do ControlTUB usam linhas vazias e títulos mesclados antes do
+  // cabeçalho físico. Mantê-las é obrigatório para que rows[7]/rows[8]
+  // correspondam às linhas 8/9 do Spool Map.
+  return XLSX.utils.sheet_to_json(sheet, { header: 1, raw: true, defval: '', blankrows: true });
 }
 
 function compositeHeaders(groupRow, headerRow) {
@@ -193,6 +196,16 @@ function parseSpoolMap(buffer, id) {
     manufactureStatus: findColumn(map, [/manufacture status/]),
     assemblyStatus: findColumn(map, [/assembly status/]),
   };
+  // Algumas exportações do ControlTUB deixam as células de cabeçalho CK/CL
+  // mescladas sem texto, embora os dados continuem nessas colunas. Preserve
+  // o status real em vez de transformar toda a base em “FAB - Not Started”.
+  const columnIndex = value => {
+    let result = 0;
+    for (const char of value) result = result * 26 + char.charCodeAt(0) - 64;
+    return result - 1;
+  };
+  if (idx.manufactureStatus < 0 && headers.length > columnIndex('CK')) idx.manufactureStatus = columnIndex('CK');
+  if (idx.assemblyStatus < 0 && headers.length > columnIndex('CL')) idx.assemblyStatus = columnIndex('CL');
   if (idx.iso < 0 || idx.spool < 0) throw new Error('As colunas Isometric e Spool não foram encontradas.');
 
   const unique = new Map();
@@ -365,3 +378,4 @@ self.onmessage = async event => {
     self.postMessage({ id, kind: 'error', error: error?.message || 'Falha ao processar o arquivo.' });
   }
 };
+
