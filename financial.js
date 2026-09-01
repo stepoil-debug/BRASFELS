@@ -360,8 +360,12 @@
     if (!state.supabase.token) return;
     try {
       const id = await getProjectId();
+      // A consulta com LIKE sobre todas as bases financeiras pode ultrapassar
+      // o timeout do PostgREST. Cada dataset já é conhecido em TABS, então
+      // consultar por igualdade mantém a resposta pequena e previsível.
       const [{ rows: summaryRows }, { rows: metaRows }] = await Promise.all([
-        rest(`/rest/v1/v_source_dataset_summary?project_id=eq.${encode(id)}&dataset_type=like.p83_financial_%25&select=dataset_type,active_rows,last_updated_at,source_file_name`),
+        Promise.all(TABS.map(tab => rest(`/rest/v1/v_source_dataset_summary?project_id=eq.${encode(id)}&dataset_type=eq.${encode(tab.dataset)}&select=dataset_type,active_rows,last_updated_at,source_file_name`)))
+          .then(results => results.flatMap(result => result.rows)),
         rest(`/rest/v1/source_records?project_id=eq.${encode(id)}&dataset_type=eq.p83_financial_metadata&source_active=eq.true&select=payload,source_row&order=source_row.asc&limit=500`),
       ]);
       summaries = new Map();
@@ -403,3 +407,4 @@
   window.addEventListener('load', () => setTimeout(install, 2350));
   window.BrasfelsFinancial = { open: openView, refresh: () => loadModule(false) };
 })();
+
