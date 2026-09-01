@@ -21,7 +21,7 @@
   let joints = [];
   let scopeJointMap = new Map();
   let scopeRateMap = new Map();
-  let sourceMeta = { file: '', updatedAt: '', scopeFile: '' };
+  let sourceMeta = { file: '', updatedAt: '', scopeFile: '', error: '' };
   let filters = { module: '', placement: '', week: '', period: '16' };
   let currentToken = '';
 
@@ -85,7 +85,7 @@
 
   function weekLabel(key, compact = false) {
     const p = parseWeekKey(key);
-    return p ? (compact ? `S${p.week}` : `Semana ${p.week} · ${p.year}`) : 'Semana —';
+    return p ? (compact ? `S${p.week}` : `Semana ${p.week} · ${p.year}`) : (compact ? 'Todas' : 'Todas as semanas');
   }
 
   function weekStart(key) {
@@ -214,7 +214,7 @@
       <div class="brd-filterbar">
         <label class="brd-filter"><span>Módulo</span><select id="dashboardModule"><option value="">Todos os módulos</option></select></label>
         <label class="brd-filter"><span>Local de execução</span><select id="dashboardPlacement"><option value="">PIPE + CAMPO</option><option value="PIPE">PIPE</option><option value="CAMPO">CAMPO</option></select></label>
-        <label class="brd-filter"><span>Semana de análise</span><select id="dashboardWeek"><option value="">Última semana</option></select></label>
+        <label class="brd-filter"><span>Semana de análise</span><select id="dashboardWeek"><option value="">Todas as semanas</option></select></label>
         <label class="brd-filter"><span>Janela dos gráficos</span><select id="dashboardPeriod"><option value="12">12 semanas</option><option value="16" selected>16 semanas</option><option value="24">24 semanas</option><option value="all">Todo histórico</option></select></label>
       </div>
       <div id="dashboardContent"><div class="brd-empty"><div><strong>Carregando Dashboard...</strong><span>Conferindo Joint Traceability, Spool Map e escopo.</span></div></div></div>`;
@@ -276,13 +276,8 @@
     const select = document.querySelector('#dashboardWeek');
     if (!select) return;
     const weeks = allWeeks(filteredRows().stageRows);
-    if (!weeks.length) {
-      select.innerHTML = '<option value="">Sem semanas</option>';
-      filters.week = '';
-      return;
-    }
-    if (!weeks.includes(filters.week)) filters.week = weeks.at(-1);
-    select.innerHTML = weeks.slice().reverse().map(key => `<option value="${escape(key)}">${escape(weekLabel(key))}</option>`).join('');
+    if (!weeks.includes(filters.week)) filters.week = '';
+    select.innerHTML = '<option value="">Todas as semanas</option>' + weeks.slice().reverse().map(key => `<option value="${escape(key)}">${escape(weekLabel(key))}</option>`).join('');
     select.value = filters.week;
   }
 
@@ -364,7 +359,7 @@
     const selectedWeek = filters.week;
 
     const cumulativeStages = STAGES.map(stage => ({ label: stage.label, value: stageRows.filter(row => Boolean(row[stage.key])).length }));
-    const selectedStages = STAGES.map(stage => ({ label: stage.label, value: stageRows.filter(row => weekKey(row[stage.key]) === selectedWeek).length }));
+    const selectedStages = STAGES.map(stage => ({ label: stage.label, value: selectedWeek ? stageRows.filter(row => weekKey(row[stage.key]) === selectedWeek).length : stageRows.filter(row => Boolean(row[stage.key])).length }));
     const weeks = allWeeks(stageRows);
     const stageWeekly = weeks.map(key => ({
       key, label: weekLabel(key, true),
@@ -457,6 +452,11 @@
         const iso = dateOnly(d);
         dailyInches.push({ label: new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(d), value: weldedInchesByDate.get(iso) || 0 });
       }
+    } else {
+      [...weldedInchesByDate.entries()].sort(([a], [b]) => a.localeCompare(b)).forEach(([iso, value]) => {
+        const d = parseDate(iso);
+        dailyInches.push({ label: d ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(d) : iso, value });
+      });
     }
 
     const statusMap = new Map();
@@ -486,7 +486,13 @@
       const pa = parseWeekKey(a); const pb = parseWeekKey(b); return (pa.year * 100 + pa.week) - (pb.year * 100 + pb.week);
     }).map(key => { cumulativeValue += releaseValueByWeek.get(key) || 0; return { key, label: weekLabel(key, true), value: cumulativeValue }; });
 
-    const selectedProduction = productionWeekly.find(row => row.key === selectedWeek) || { fabricated: 0, weldedJoints: 0, weldedWeightT: 0 };
+    const selectedProduction = selectedWeek
+      ? (productionWeekly.find(row => row.key === selectedWeek) || { fabricated: 0, weldedJoints: 0, weldedWeightT: 0 })
+      : productionWeekly.reduce((total, row) => ({
+        fabricated: total.fabricated + row.fabricated,
+        weldedJoints: total.weldedJoints + row.weldedJoints,
+        weldedWeightT: total.weldedWeightT + row.weldedWeightT,
+      }), { fabricated: 0, weldedJoints: 0, weldedWeightT: 0 });
     const selectedInches = dailyInches.reduce((sum, row) => sum + row.value, 0);
     const dateFields = [...STAGES.map(stage => stage.key), 'release_date', 'inspection_release_date'];
     let invalidDates = 0;
@@ -577,28 +583,33 @@
 
   function listBars(target, rows) {
     const el = document.querySelector(target); if (!el) return;
+    if (!rows.length) { el.innerHTML = '<div class="brd-empty"><strong>Sem dados para exibir.</strong></div>'; return; }
     const max=Math.max(1,...rows.map(r=>r.value));
     el.innerHTML=`<div class="brd-stage-list">${rows.map(r=>`<div class="brd-stage-row"><span title="${escape(r.label)}">${escape(r.label)}</span><div class="brd-track"><i style="width:${Math.min(100,r.value/max*100)}%"></i></div><strong>${fmt(r.value)}</strong></div>`).join('')}</div>`;
   }
 
   function statusBars(target, rows) {
     const el=document.querySelector(target); if(!el)return;
+    if (!rows.length) { el.innerHTML = '<div class="brd-empty"><strong>Sem dados para exibir.</strong></div>'; return; }
     const shown=rows.slice(0,12),max=Math.max(1,...shown.map(r=>r.value));
     el.innerHTML=`<div class="brd-status-list">${shown.map(r=>`<div class="brd-status-row"><span title="${escape(r.label)}">${escape(r.label)}</span><div class="brd-track"><i style="width:${Math.min(100,r.value/max*100)}%"></i></div><strong>${fmt(r.value)}</strong></div>`).join('')}</div>`;
   }
 
   function render() {
     const content=document.querySelector('#dashboardContent'); if(!content)return;
-    if(!joints.length){content.innerHTML='<div class="brd-empty"><div><strong>Joint Traceability P85 ainda não está disponível.</strong><span>O Dashboard não utiliza os números da planilha de gráficos; ele precisa da base operacional atual.</span></div></div>';return;}
     const d=compute();
     document.querySelector('#dashboardNavCount').textContent=fmt(d.moduleRows.length);
     const sourceName=document.querySelector('#dashboardSourceName'); if(sourceName)sourceName.textContent=sourceMeta.file||'Joint Traceability + Spool Map';
-    const sourceTime=document.querySelector('#dashboardSourceTime'); if(sourceTime)sourceTime.textContent=sourceMeta.updatedAt?`Atualizado ${new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(sourceMeta.updatedAt))}`:'Base carregada';
+    const sourceTime=document.querySelector('#dashboardSourceTime'); if(sourceTime)sourceTime.textContent=sourceMeta.updatedAt?`Atualizado ${new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(sourceMeta.updatedAt))}`:(sourceMeta.error?'Verifique a base e tente Atualizar':'Aguardando carregamento...');
     const fabricationPct=d.eligibleSpools?d.fabricated.length/d.eligibleSpools*100:0;
     const selectedStage=d.selectedStages.find(r=>r.label==='Soldagem')?.value||0;
     const priceCoverage=d.releasedJoints?d.pricedReleased/d.releasedJoints*100:0;
+    const dashboardNotice = sourceMeta.error
+      ? `<div class="brd-note warn"><strong>Os gráficos estão visíveis, mas a base operacional não carregou.</strong> ${escape(sourceMeta.error)} Use <strong>Atualizar</strong> após entrar no painel para preencher os valores.</div>`
+      : (!joints.length ? '<div class="brd-note warn"><strong>Os 10 gráficos já estão visíveis.</strong> Aguardando a base Joint Traceability P85 para preencher os valores operacionais.</div>' : '');
 
     content.innerHTML=`
+      ${dashboardNotice}
       <div class="brd-kpis">
         <article class="brd-kpi success"><span>Juntas liberadas</span><strong>${fmt(d.releasedJoints)}</strong><small>Data de liberação / situação atual</small></article>
         <article class="brd-kpi success"><span>Spools 100% dimensional</span><strong>${fmt(d.fabricated.length)}</strong><small>${fmt(fabricationPct,1)}% dos spools PIPE elegíveis</small></article>
@@ -665,8 +676,13 @@
 
   async function loadData(showToast) {
     const content=document.querySelector('#dashboardContent');
-    if(!state.supabase.token){if(content)content.innerHTML='<div class="brd-empty"><strong>Entre no painel para carregar o Dashboard.</strong></div>';return;}
-    if(content)content.innerHTML='<div class="brd-empty"><div><strong>Atualizando Dashboard...</strong><span>Carregando fontes e recalculando relatórios.</span></div></div>';
+    sourceMeta.error = '';
+    if(!state.supabase.token){
+      sourceMeta.error = 'Entre no painel para carregar os valores operacionais.';
+      buildFilters(); render();
+      return;
+    }
+    if(content) render();
     try {
       if (!state.spools?.length && window.loadBrasfelsRemoteData) await window.loadBrasfelsRemoteData({ silent: true });
       const id=await getProjectId();
@@ -684,11 +700,13 @@
         file: jointSummary[0]?.source_file_name || jointRows[0]?.source_file_name || JOINT_DATASET,
         updatedAt: jointSummary[0]?.last_updated_at || jointRows.reduce((latest,row)=>!latest||String(row.updated_at)>String(latest)?row.updated_at:latest,''),
         scopeFile: scopeSummary[0]?.source_file_name || '',
+        error: '',
       };
       buildFilters(); render();
       if(showToast)toast(`Dashboard atualizado: ${fmt(joints.length)} juntas analisadas.`);
     } catch(error) {
-      if(content)content.innerHTML=`<div class="brd-empty"><div><strong>Não foi possível carregar o Dashboard.</strong><span>${escape(error.message)}</span></div></div>`;
+      sourceMeta.error = error.message || 'Falha ao carregar as fontes operacionais.';
+      buildFilters(); render();
       if(showToast)toast(error.message,'error');
     }
   }
@@ -720,3 +738,4 @@
   window.addEventListener('load',()=>setTimeout(install,2550));
   window.BrasfelsDashboard={open:openView,refresh:()=>loadData(false)};
 })();
+
