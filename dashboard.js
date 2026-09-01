@@ -582,17 +582,11 @@
   }
 
   function listBars(target, rows) {
-    const el = document.querySelector(target); if (!el) return;
-    if (!rows.length) { el.innerHTML = '<div class="brd-empty"><strong>Sem dados para exibir.</strong></div>'; return; }
-    const max=Math.max(1,...rows.map(r=>r.value));
-    el.innerHTML=`<div class="brd-stage-list">${rows.map(r=>`<div class="brd-stage-row"><span title="${escape(r.label)}">${escape(r.label)}</span><div class="brd-track"><i style="width:${Math.min(100,r.value/max*100)}%"></i></div><strong>${fmt(r.value)}</strong></div>`).join('')}</div>`;
+    barChart(target, rows);
   }
 
   function statusBars(target, rows) {
-    const el=document.querySelector(target); if(!el)return;
-    if (!rows.length) { el.innerHTML = '<div class="brd-empty"><strong>Sem dados para exibir.</strong></div>'; return; }
-    const shown=rows.slice(0,12),max=Math.max(1,...shown.map(r=>r.value));
-    el.innerHTML=`<div class="brd-status-list">${shown.map(r=>`<div class="brd-status-row"><span title="${escape(r.label)}">${escape(r.label)}</span><div class="brd-track"><i style="width:${Math.min(100,r.value/max*100)}%"></i></div><strong>${fmt(r.value)}</strong></div>`).join('')}</div>`;
+    barChart(target, rows.slice(0, 12));
   }
 
   function render() {
@@ -600,13 +594,13 @@
     const d=compute();
     document.querySelector('#dashboardNavCount').textContent=fmt(d.moduleRows.length);
     const sourceName=document.querySelector('#dashboardSourceName'); if(sourceName)sourceName.textContent=sourceMeta.file||'Joint Traceability + Spool Map';
-    const sourceTime=document.querySelector('#dashboardSourceTime'); if(sourceTime)sourceTime.textContent=sourceMeta.updatedAt?`Atualizado ${new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(sourceMeta.updatedAt))}`:(sourceMeta.error?'Verifique a base e tente Atualizar':'Aguardando carregamento...');
+    const sourceTime=document.querySelector('#dashboardSourceTime'); if(sourceTime)sourceTime.textContent=sourceMeta.updatedAt?`Atualizado ${new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(sourceMeta.updatedAt))}`:(sourceMeta.error?'Verifique a base e tente Atualizar':(joints.length?'Base carregada':'Sem registros ativos'));
     const fabricationPct=d.eligibleSpools?d.fabricated.length/d.eligibleSpools*100:0;
     const selectedStage=d.selectedStages.find(r=>r.label==='Soldagem')?.value||0;
     const priceCoverage=d.releasedJoints?d.pricedReleased/d.releasedJoints*100:0;
     const dashboardNotice = sourceMeta.error
       ? `<div class="brd-note warn"><strong>Os gráficos estão visíveis, mas a base operacional não carregou.</strong> ${escape(sourceMeta.error)} Use <strong>Atualizar</strong> após entrar no painel para preencher os valores.</div>`
-      : (!joints.length ? '<div class="brd-note warn"><strong>Os 10 gráficos já estão visíveis.</strong> Aguardando a base Joint Traceability P85 para preencher os valores operacionais.</div>' : '');
+      : (!joints.length ? '<div class="brd-note warn"><strong>A base Joint Traceability P85 está sem registros ativos.</strong> Os cartões e os gráficos estão prontos, mas os valores de juntas só aparecem depois que o Mapa de Juntas for importado e aplicado. <button type="button" class="button secondary brd-inline-action" id="dashboardImportCta">Importar Mapa de Juntas</button></div>' : '');
 
     content.innerHTML=`
       ${dashboardNotice}
@@ -667,11 +661,12 @@
     barChart('#dbMiniSpools', periodRows(d.productionWeekly).slice(-8).map(r=>({label:r.label,value:r.fabricated})), v=>fmt(v));
     barChart('#dbMiniJoints', periodRows(d.productionWeekly).slice(-8).map(r=>({label:r.label,value:r.weldedJoints})), v=>fmt(v));
     barChart('#dbMiniWeight', periodRows(d.productionWeekly).slice(-8).map(r=>({label:r.label,value:r.weldedWeightT})), v=>`${fmt(v,1)} t`);
-    lineChart('#dbWeightWeekly', d.weightWeekly, [{key:'actual',label:'Peso real soldado'},{key:'planned',label:'Peso programado STEP'}], v=>`${fmt(v,1)} t`);
+    barChart('#dbWeightWeekly', d.weightWeekly.map(row=>({ label: row.label, value: row.actual })), v=>`${fmt(v,1)} t`);
     lineChart('#dbRundown', d.rundown, [{key:'actualRemaining',label:'Saldo real'},{key:'plannedRemaining',label:'Saldo planejado'}], v=>`${fmt(v,1)} t`);
     statusBars('#dbStatuses', d.statuses);
     if (d.pricedReleased) lineChart('#dbValueSeries', d.valueSeries, [{key:'value',label:'Valor agregado'}], v=>money(v));
     else document.querySelector('#dbValueSeries').innerHTML='<div class="brd-empty"><div><strong>Sem cobertura de valores suficiente.</strong><span>Nenhum valor será inferido sem correspondência comprovada.</span></div></div>';
+    document.querySelector('#dashboardImportCta')?.addEventListener('click', () => document.querySelector('#openImport')?.click());
   }
 
   async function loadData(showToast) {
@@ -697,7 +692,7 @@
       scopeJointMap=new Map(scopeRows.map(row=>[upper(row.source_key),row.payload||{}]));
       scopeRateMap=new Map(rateRows.map(row=>[normalizeText(row.payload?.faixa_diametro_espessura),row.payload||{}]));
       sourceMeta={
-        file: jointSummary[0]?.source_file_name || jointRows[0]?.source_file_name || JOINT_DATASET,
+        file: jointSummary[0]?.source_file_name || jointRows[0]?.source_file_name || '',
         updatedAt: jointSummary[0]?.last_updated_at || jointRows.reduce((latest,row)=>!latest||String(row.updated_at)>String(latest)?row.updated_at:latest,''),
         scopeFile: scopeSummary[0]?.source_file_name || '',
         error: '',
