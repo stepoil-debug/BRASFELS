@@ -1,7 +1,7 @@
 'use strict';
 
 (function () {
-  const WORKER_URL = 'excel-import-worker-v2.js?v=8';
+  const WORKER_URL = 'excel-import-worker-v2.js?v=9';
   const DATASET_LABELS = {
     p85_materials_raw: 'Materiais P85 (origem)', p85_unlinked_materials: 'Materiais P85 ainda sem spool', p83_spools: 'Spools P83',
     p83_joints: 'Mapa de juntas P83', p83_backlog: 'Backlog P83', p83_drawings: 'Controle de desenhos P83', p83_schedule: 'Programação P83',
@@ -142,3 +142,4 @@
   window.addEventListener('load', () => setTimeout(installImportV2, 1200));
   window.BrasfelsImportV2 = { validate: validateImportV2, apply: applyImportV2, refresh: loadSourceSummaries };
 })();
+
