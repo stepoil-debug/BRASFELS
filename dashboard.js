@@ -605,14 +605,10 @@
     content.innerHTML=`
       ${dashboardNotice}
       <div class="brd-kpis">
-        <article class="brd-kpi success"><span>Juntas liberadas</span><strong>${fmt(d.releasedJoints)}</strong><small>Data de liberação / situação atual</small></article>
         <article class="brd-kpi success"><span>Spools 100% dimensional</span><strong>${fmt(d.fabricated.length)}</strong><small>${fmt(fabricationPct,1)}% dos spools PIPE elegíveis</small></article>
         <article class="brd-kpi"><span>Peso fabricado</span><strong>${fmt(d.fabricatedWeight,2)} t</strong><small>Soma do peso dos spools concluídos</small></article>
-        <article class="brd-kpi"><span>Juntas soldadas</span><strong>${fmt(d.weldedJointsTotal)}</strong><small>Acumulado de juntas PIPE</small></article>
         <article class="brd-kpi warn"><span>Backlog fabricação</span><strong>${fmt(d.pendingFabricationWeight,2)} t</strong><small>${fmt(d.pendingDimensionalJoints)} juntas PIPE pendentes</small></article>
         <article class="brd-kpi warn"><span>Peso em hold</span><strong>${fmt(d.holdPendingWeight,2)} t</strong><small>Peso pendente proporcional em spools hold</small></article>
-        <article class="brd-kpi"><span>Aptos para pintura</span><strong>${fmt(d.aptPainting)}</strong><small>Status: Aguardando Pintura de Fundo</small></article>
-        <article class="brd-kpi ${d.pendingTraceability?'danger':'success'}"><span>Rastreabilidade pendente</span><strong>${fmt(d.pendingTraceability)}</strong><small>Dimensional aprovado com pendência de material</small></article>
       </div>
 
       <div class="brd-section"><div class="brd-section-head"><div><p class="eyebrow">PRODUÇÃO</p><h3>Evolução e desempenho de fábrica</h3></div><p>${escape(weekLabel(filters.week))}</p></div>
