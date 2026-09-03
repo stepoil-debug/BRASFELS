@@ -214,7 +214,6 @@
       <div class="brd-filterbar">
         <label class="brd-filter"><span>Módulo</span><select id="dashboardModule"><option value="">Todos os módulos</option></select></label>
         <label class="brd-filter"><span>Local de execução</span><select id="dashboardPlacement"><option value="">PIPE + CAMPO</option><option value="PIPE">PIPE</option><option value="CAMPO">CAMPO</option></select></label>
-        <label class="brd-filter"><span>Semana de análise</span><select id="dashboardWeek"><option value="">Todas as semanas</option></select></label>
         <label class="brd-filter"><span>Janela dos gráficos</span><select id="dashboardPeriod"><option value="12">12 semanas</option><option value="16" selected>16 semanas</option><option value="24">24 semanas</option><option value="all">Todo histórico</option></select></label>
       </div>
       <div id="dashboardContent"><div class="brd-empty"><div><strong>Carregando Dashboard...</strong><span>Conferindo Joint Traceability, Spool Map e escopo.</span></div></div></div>`;
@@ -227,7 +226,6 @@
     };
     document.querySelector('#dashboardModule').onchange = e => { filters.module = e.target.value; refreshWeekOptions(); render(); };
     document.querySelector('#dashboardPlacement').onchange = e => { filters.placement = e.target.value; refreshWeekOptions(); render(); };
-    document.querySelector('#dashboardWeek').onchange = e => { filters.week = e.target.value; render(); };
     document.querySelector('#dashboardPeriod').onchange = e => { filters.period = e.target.value; render(); };
   }
 
@@ -356,10 +354,8 @@
     const moduleSpools = (state.spools || []).filter(spool => !filters.module || upper(spool.module) === filters.module);
     const spools = new Map(moduleSpools.map(spool => [normalizeSpoolKey(spool.source_key), spool]));
     const rowsBySpool = groupBySpool(moduleRows);
-    const selectedWeek = filters.week;
+    const selectedWeek = '';
 
-    const cumulativeStages = STAGES.map(stage => ({ label: stage.label, value: stageRows.filter(row => Boolean(row[stage.key])).length }));
-    const selectedStages = STAGES.map(stage => ({ label: stage.label, value: selectedWeek ? stageRows.filter(row => weekKey(row[stage.key]) === selectedWeek).length : stageRows.filter(row => Boolean(row[stage.key])).length }));
     const weeks = allWeeks(stageRows);
     const stageWeekly = weeks.map(key => ({
       key, label: weekLabel(key, true),
@@ -372,7 +368,7 @@
     const pipeCount = new Map();
     pipeRows.forEach(row => { const key = normalizeSpoolKey(row.spool_key); pipeCount.set(key, (pipeCount.get(key) || 0) + 1); });
 
-    const weldedInchesByDate = new Map();
+    const weldedWeightByDate = new Map();
     const weldedJointsByWeek = new Map();
     const weldedWeightByWeek = new Map();
     let weldedJointsTotal = 0;
@@ -380,15 +376,28 @@
       if (!row.welding_date) continue;
       weldedJointsTotal += 1;
       const d = dateOnly(row.welding_date);
-      weldedInchesByDate.set(d, (weldedInchesByDate.get(d) || 0) + parseDiameterInches(row.diameter_inch));
       const wk = weekKey(row.welding_date);
       if (!wk) continue;
       weldedJointsByWeek.set(wk, (weldedJointsByWeek.get(wk) || 0) + 1);
       const spoolKey = normalizeSpoolKey(row.spool_key);
       const spool = spools.get(spoolKey);
       const totalPipe = pipeCount.get(spoolKey) || 0;
-      if (spool && totalPipe) weldedWeightByWeek.set(wk, (weldedWeightByWeek.get(wk) || 0) + proportionalWeight(spool.weight_kg, totalPipe));
+      if (spool && totalPipe) {
+        const contribution = proportionalWeight(spool.weight_kg, totalPipe);
+        weldedWeightByDate.set(d, (weldedWeightByDate.get(d) || 0) + contribution);
+        weldedWeightByWeek.set(wk, (weldedWeightByWeek.get(wk) || 0) + contribution);
+      }
     }
+
+    const cumulativeWeightStages = STAGES.map(stage => ({
+      label: stage.label,
+      value: stageRows.reduce((sum, row) => {
+        if (!row[stage.key] || upper(row.placement) !== 'PIPE') return sum;
+        const spool = spools.get(normalizeSpoolKey(row.spool_key));
+        const totalPipe = pipeCount.get(normalizeSpoolKey(row.spool_key)) || 0;
+        return spool && totalPipe ? sum + proportionalWeight(spool.weight_kg, totalPipe) / 1000 : sum;
+      }, 0),
+    }));
 
     const fabricated = [];
     let fabricatedWeight = 0;
@@ -444,20 +453,10 @@
     const totalWeight = moduleSpools.reduce((sum, spool) => sum + number(spool.weight_kg), 0) / 1000;
     const rundown = rundownSeries(totalWeight, weightWeekly);
 
-    const selectedStart = weekStart(selectedWeek);
-    const dailyInches = [];
-    if (selectedStart) {
-      for (let i = 0; i < 7; i += 1) {
-        const d = new Date(selectedStart.getTime() + i * 86400000);
-        const iso = dateOnly(d);
-        dailyInches.push({ label: new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(d), value: weldedInchesByDate.get(iso) || 0 });
-      }
-    } else {
-      [...weldedInchesByDate.entries()].sort(([a], [b]) => a.localeCompare(b)).forEach(([iso, value]) => {
-        const d = parseDate(iso);
-        dailyInches.push({ label: d ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(d) : iso, value });
-      });
-    }
+    const dailyWeight = [...weldedWeightByDate.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([iso, value]) => {
+      const d = parseDate(iso);
+      return { label: d ? new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: '2-digit' }).format(d) : iso, value: value / 1000 };
+    });
 
     const statusMap = new Map();
     moduleSpools.forEach(spool => { const status = cleanStatus(spool.manufacture_status || spool.assembly_status); statusMap.set(status, (statusMap.get(status) || 0) + 1); });
@@ -493,7 +492,6 @@
         weldedJoints: total.weldedJoints + row.weldedJoints,
         weldedWeightT: total.weldedWeightT + row.weldedWeightT,
       }), { fabricated: 0, weldedJoints: 0, weldedWeightT: 0 });
-    const selectedInches = dailyInches.reduce((sum, row) => sum + row.value, 0);
     const dateFields = [...STAGES.map(stage => stage.key), 'release_date', 'inspection_release_date'];
     let invalidDates = 0;
     let futureDates = 0;
@@ -516,12 +514,13 @@
     const fabricatedWithoutWeight = fabricated.filter(item => item.weight <= 0).length;
 
     return {
-      moduleRows, stageRows, moduleSpools, cumulativeStages, selectedStages, stageWeekly, dailyInches,
-      productionWeekly, weightWeekly, rundown, statuses, totalWeight, selectedProduction, selectedInches,
+      moduleRows, stageRows, moduleSpools, cumulativeWeightStages, stageWeekly, dailyWeight,
+      productionWeekly, weightWeekly, rundown, statuses, totalWeight, selectedProduction,
       releasedJoints, weldedJointsTotal, fabricated, fabricatedWeight: fabricatedWeight / 1000, eligibleSpools,
       pendingDimensionalJoints, pendingFabricationWeight: pendingFabricationWeight / 1000,
       holdPendingWeight: holdPendingWeight / 1000, aptPainting, inaptQty, inaptWeight, pendingTraceability,
       releasedValue, pricedReleased, valueSeries,
+      weldedWeightTotalT: [...weldedWeightByWeek.values()].reduce((sum, value) => sum + value, 0) / 1000,
       quality: {
         duplicateJointRows: Math.max(0, joints.length - uniqueJointRows(joints).length),
         missingSpoolRows,
@@ -596,7 +595,6 @@
     const sourceName=document.querySelector('#dashboardSourceName'); if(sourceName)sourceName.textContent=sourceMeta.file||'Joint Traceability + Spool Map';
     const sourceTime=document.querySelector('#dashboardSourceTime'); if(sourceTime)sourceTime.textContent=sourceMeta.updatedAt?`Atualizado ${new Intl.DateTimeFormat('pt-BR',{dateStyle:'short',timeStyle:'short'}).format(new Date(sourceMeta.updatedAt))}`:(sourceMeta.error?'Verifique a base e tente Atualizar':(joints.length?'Base carregada':'Sem registros ativos'));
     const fabricationPct=d.eligibleSpools?d.fabricated.length/d.eligibleSpools*100:0;
-    const selectedStage=d.selectedStages.find(r=>r.label==='Soldagem')?.value||0;
     const priceCoverage=d.releasedJoints?d.pricedReleased/d.releasedJoints*100:0;
     const dashboardNotice = sourceMeta.error
       ? `<div class="brd-note warn"><strong>Os gráficos estão visíveis, mas a base operacional não carregou.</strong> ${escape(sourceMeta.error)} Use <strong>Atualizar</strong> após entrar no painel para preencher os valores.</div>`
@@ -611,13 +609,12 @@
         <article class="brd-kpi warn"><span>Peso em hold</span><strong>${fmt(d.holdPendingWeight,2)} t</strong><small>Peso pendente proporcional em spools hold</small></article>
       </div>
 
-      <div class="brd-section"><div class="brd-section-head"><div><p class="eyebrow">PRODUÇÃO</p><h3>Evolução e desempenho de fábrica</h3></div><p>${escape(weekLabel(filters.week))}</p></div>
+      <div class="brd-section"><div class="brd-section-head"><div><p class="eyebrow">PRODUÇÃO</p><h3>Evolução e desempenho de fábrica</h3></div><p>Todo histórico</p></div>
         <div class="brd-grid">
           <article class="brd-card brd-span-12"><div class="brd-card-head"><div><h4>Evolução semanal · quantidade</h4><p>Reprodução do gráfico “Evolução Semanal (QTD)”: Corte, Montagem e Soldagem.</p></div><span class="brd-chip">Relatório 1/10</span></div><div id="dbStageWeekly" class="brd-chart"></div></article>
-          <article class="brd-card"><div class="brd-card-head"><div><h4>Quantidade acumulada por etapa</h4><p>Oito etapas do fluxo de fabricação.</p></div><span class="brd-chip">Relatório 3/10</span></div><div id="dbCumulative" class="brd-chart compact"></div></article>
-          <article class="brd-card"><div class="brd-card-head"><div><h4>Quantidade da semana selecionada</h4><p>Mesma leitura do gráfico semanal da planilha, sem valores congelados.</p></div><span class="brd-chip">Relatório 5/10</span></div><div id="dbWeekStages" class="brd-chart compact"></div></article>
-          <article class="brd-card"><div class="brd-card-head"><div><h4>Polegadas soldadas por dia</h4><p>Soma do diâmetro das juntas PIPE pela data de soldagem.</p></div><span class="brd-chip">Relatório 2/10</span></div><div id="dbDailyInches" class="brd-chart compact"></div></article>
-          <article class="brd-card"><div class="brd-card-head"><div><h4>Comparativo de desempenho da fábrica</h4><p>O gráfico original mistura três escalas. Aqui elas ficam sincronizadas e separadas para leitura correta.</p></div><span class="brd-chip">Relatórios 7–8/10</span></div><div class="brd-mini-grid"><div class="brd-mini"><h5>Spools fabricados</h5><strong>${fmt(d.selectedProduction.fabricated)}</strong><small>${escape(weekLabel(filters.week,true))}</small><div id="dbMiniSpools"></div></div><div class="brd-mini"><h5>Juntas soldadas</h5><strong>${fmt(d.selectedProduction.weldedJoints)}</strong><small>${escape(weekLabel(filters.week,true))}</small><div id="dbMiniJoints"></div></div><div class="brd-mini"><h5>Peso soldado</h5><strong>${fmt(d.selectedProduction.weldedWeightT,2)} t</strong><small>${escape(weekLabel(filters.week,true))}</small><div id="dbMiniWeight"></div></div></div></article>
+          <article class="brd-card"><div class="brd-card-head"><div><h4>Peso acumulado por etapa</h4><p>Peso proporcional das juntas PIPE que já passaram por cada etapa.</p></div><span class="brd-chip">Relatório 3/10</span></div><div id="dbCumulative" class="brd-chart compact"></div></article>
+          <article class="brd-card"><div class="brd-card-head"><div><h4>Peso soldado por dia</h4><p>Peso proporcional dos spools PIPE pela data de soldagem.</p></div><span class="brd-chip">Relatório 2/10</span></div><div id="dbDailyWeight" class="brd-chart compact"></div></article>
+          <article class="brd-card"><div class="brd-card-head"><div><h4>Comparativo de desempenho da fábrica</h4><p>O gráfico original mistura três escalas. Aqui elas ficam sincronizadas e separadas para leitura correta.</p></div><span class="brd-chip">Relatórios 7–8/10</span></div><div class="brd-mini-grid"><div class="brd-mini"><h5>Spools fabricados</h5><strong>${fmt(d.selectedProduction.fabricated)}</strong><small>Todo histórico</small><div id="dbMiniSpools"></div></div><div class="brd-mini"><h5>Juntas soldadas</h5><strong>${fmt(d.selectedProduction.weldedJoints)}</strong><small>Todo histórico</small><div id="dbMiniJoints"></div></div><div class="brd-mini"><h5>Peso soldado</h5><strong>${fmt(d.selectedProduction.weldedWeightT,2)} t</strong><small>Todo histórico</small><div id="dbMiniWeight"></div></div></div></article>
         </div>
       </div>
 
@@ -638,22 +635,21 @@
 
       <details class="brd-audit"><summary>Rastreabilidade dos 10 relatórios analisados</summary><div class="brd-audit-grid">
         <div class="brd-audit-item"><strong>1 · Evolução semanal</strong><span>Excel: BASE DE DADOS K41/K42/K44 × semanas AI:BC.</span><code>DB: cutting_date + coupling_date + welding_date</code></div>
-        <div class="brd-audit-item"><strong>2 · Polegadas soldadas / dia</strong><span>Excel: POL SOLDADAS, soma de diâmetro para PIPE pela data de soldagem.</span><code>DB: diameter_inch + welding_date + placement=PIPE</code></div>
-        <div class="brd-audit-item"><strong>3 · Quantidade acumulada</strong><span>Excel: 8 etapas, BASE DE DADOS K52:L59.</span><code>DB: datas preenchidas das 8 etapas do Joint Traceability</code></div>
+        <div class="brd-audit-item"><strong>2 · Peso soldado / dia</strong><span>Peso proporcional dos spools PIPE pela data de soldagem.</span><code>DB: weight_kg ÷ juntas PIPE × welding_date</code></div>
+        <div class="brd-audit-item"><strong>3 · Peso acumulado por etapa</strong><span>Peso proporcional das juntas PIPE com data preenchida em cada etapa.</span><code>DB: datas preenchidas das 8 etapas do Joint Traceability</code></div>
         <div class="brd-audit-item"><strong>4 · Peso semanal soldado</strong><span>Excel: PESO - JUNTAS SOLDADAS → BASE DE DADOS linha 81.</span><code>DB: weight_kg do spool ÷ juntas PIPE × juntas soldadas</code></div>
-        <div class="brd-audit-item"><strong>5 · Quantidade da semana</strong><span>Excel: INDEX da matriz semanal K41:BC48.</span><code>DB: mesma contagem das etapas filtrada por WEEKNUM(data,14)-1</code></div>
+        <div class="brd-audit-item"><strong>5 · Histórico semanal</strong><span>O filtro de semana selecionada foi retirado para mostrar a base completa.</span><code>DB: agrupamento por WEEKNUM(data,14)-1</code></div>
         <div class="brd-audit-item"><strong>6 · Valor agregado</strong><span>Excel: quantidade liberada × valor unitário por diâmetro/espessura.</span><code>DB: release_date + inspection_class + p85_scope_joints + p85_scope_inspection_rates</code></div>
         <div class="brd-audit-item"><strong>7–8 · Desempenho de fábrica</strong><span>Excel: gráfico composto com peso, juntas e spools em escalas diferentes.</span><code>DB: três séries semanais separadas para evitar distorção visual</code></div>
         <div class="brd-audit-item"><strong>9 · Rundown</strong><span>Excel: peso real + planejamentos e replanejamentos manuais/obsoletos.</span><code>DB: peso real soldado × manufacture_schedule_date atual</code></div>
         <div class="brd-audit-item"><strong>10 · Análise de escopo</strong><span>Excel: COUNTIF no status de fabricação do BASE SPOOL.</span><code>DB: manufacture_status ativo do Spool Map</code></div>
         <div class="brd-audit-item"><strong>Regra de semana</strong><span>A planilha usa uma semana não ISO.</span><code>WEEKNUM(data,14)-1 mantido por compatibilidade</code></div>
       </div></details>
-      <div class="brd-source-strip"><span><strong>Joint Traceability:</strong> ${fmt(d.moduleRows.length)} juntas</span><span><strong>Spool Map:</strong> ${fmt(d.moduleSpools.length)} spools</span><span><strong>Semana:</strong> ${escape(weekLabel(filters.week))}</span><span><strong>Soldagem na semana:</strong> ${fmt(selectedStage)}</span><span><strong>Polegadas na semana:</strong> ${fmt(d.selectedInches,1)}″</span><span><strong>Qualidade:</strong> ${fmt(d.quality.duplicateJointRows + d.quality.missingSpoolRows + d.quality.invalidDates + d.quality.approvedWithoutDate + d.quality.unparsedDiameters)} alertas detectáveis</span></div>`;
+      <div class="brd-source-strip"><span><strong>Joint Traceability:</strong> ${fmt(d.moduleRows.length)} juntas</span><span><strong>Spool Map:</strong> ${fmt(d.moduleSpools.length)} spools</span><span><strong>Período:</strong> Todo histórico</span><span><strong>Juntas soldadas:</strong> ${fmt(d.weldedJointsTotal)}</span><span><strong>Peso soldado:</strong> ${fmt(d.weldedWeightTotalT,2)} t</span><span><strong>Qualidade:</strong> ${fmt(d.quality.duplicateJointRows + d.quality.missingSpoolRows + d.quality.invalidDates + d.quality.approvedWithoutDate + d.quality.unparsedDiameters)} alertas detectáveis</span></div>`;
 
     lineChart('#dbStageWeekly', d.stageWeekly, [{key:'corte',label:'Corte'},{key:'montagem',label:'Montagem'},{key:'soldagem',label:'Soldagem'}]);
-    listBars('#dbCumulative', d.cumulativeStages);
-    listBars('#dbWeekStages', d.selectedStages);
-    barChart('#dbDailyInches', d.dailyInches, v=>fmt(v,0));
+    barChart('#dbCumulative', d.cumulativeWeightStages, v=>`${fmt(v,1)} t`);
+    barChart('#dbDailyWeight', d.dailyWeight, v=>`${fmt(v,2)} t`);
     barChart('#dbMiniSpools', periodRows(d.productionWeekly).slice(-8).map(r=>({label:r.label,value:r.fabricated})), v=>fmt(v));
     barChart('#dbMiniJoints', periodRows(d.productionWeekly).slice(-8).map(r=>({label:r.label,value:r.weldedJoints})), v=>fmt(v));
     barChart('#dbMiniWeight', periodRows(d.productionWeekly).slice(-8).map(r=>({label:r.label,value:r.weldedWeightT})), v=>`${fmt(v,1)} t`);
