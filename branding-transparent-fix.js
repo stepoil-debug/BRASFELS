@@ -3,7 +3,25 @@
 (function installTransparentBrandingFix() {
   const STEP_LOGO = 'assets/step-one-official-transparent.png?v=19';
   const BRASFELS_LOGO = 'assets/brasfels-logo.svg?v=19';
+  const DASHBOARD_IMPROVEMENTS_VERSION = '20260908-1';
   let scheduled = false;
+
+  function loadDashboardImprovements() {
+    if (!document.querySelector('#brasfelsDashboardImprovementsCss')) {
+      const link = document.createElement('link');
+      link.id = 'brasfelsDashboardImprovementsCss';
+      link.rel = 'stylesheet';
+      link.href = `dashboard-improvements.css?v=${DASHBOARD_IMPROVEMENTS_VERSION}`;
+      document.head.appendChild(link);
+    }
+    if (!document.querySelector('#brasfelsDashboardImprovementsJs')) {
+      const script = document.createElement('script');
+      script.id = 'brasfelsDashboardImprovementsJs';
+      script.src = `dashboard-improvements.js?v=${DASHBOARD_IMPROVEMENTS_VERSION}`;
+      script.async = true;
+      document.head.appendChild(script);
+    }
+  }
 
   function apply() {
     scheduled = false;
@@ -36,6 +54,7 @@
   }
 
   window.addEventListener('load', () => {
+    loadDashboardImprovements();
     schedule();
     const observer = new MutationObserver(mutations => {
       if (mutations.some(mutation => mutation.addedNodes.length || mutation.removedNodes.length)) schedule();
