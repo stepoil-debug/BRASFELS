@@ -1,7 +1,7 @@
 'use strict';
 
 (function installTransparentBrandingFix() {
-  const STEP_LOGO = 'assets/step-one-official-transparent.png?v=19';
+  const STEP_LOGO = 'assets/step-one-logo.svg?v=20260908';
   const BRASFELS_LOGO = 'assets/brasfels-logo.svg?v=19';
   const DASHBOARD_IMPROVEMENTS_VERSION = '20260908-1';
   let scheduled = false;
@@ -31,10 +31,10 @@
 
       const images = container.querySelectorAll('img');
       if (images[0]) {
-        if (!images[0].src.includes('/assets/step-one-official-transparent.png')) images[0].src = STEP_LOGO;
+        if (!images[0].src.includes('/assets/step-one-logo.svg')) images[0].src = STEP_LOGO;
         images[0].alt = 'STEP One';
         images[0].removeAttribute('referrerpolicy');
-        images[0].dataset.transparentAsset = 'official-png';
+        images[0].dataset.transparentAsset = 'official-svg';
       }
 
       if (images[1]) {
